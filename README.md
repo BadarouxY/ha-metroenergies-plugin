@@ -18,10 +18,8 @@ etc.) pour les afficher sous forme de graphique dans Home Assistant.
   depuis metroenergies.fr.
 - Un capteur `sensor.metroenergies_unofficial_consommation` exposant la
   consommation du dernier jour, avec l'historique complet en attribut
-  (`history`).
-- Une carte Lovelace dédiée (`custom:metroenergies-card`), fournie et
-  enregistrée automatiquement par l'intégration — pas besoin d'installer
-  une carte tierce.
+  (`history`, liste de `{date, conso}`) prêt à être graphé (ex: avec
+  [apexcharts-card](https://github.com/RomRider/apexcharts-card)).
 
 ## Installation
 
@@ -46,14 +44,41 @@ passe du site.
 
 ## Carte Lovelace
 
-Ajouter une carte au dashboard avec :
+Cette intégration n'embarque pas sa propre carte de graphique : elle expose
+les données et laisse le choix de la carte d'affichage. La carte recommandée
+est [apexcharts-card](https://github.com/RomRider/apexcharts-card)
+(disponible via HACS, catégorie "Frontend"), qui permet de configurer
+finement la plage de jours, les échelles et la mise en surbrillance des
+valeurs :
 
 ```yaml
-type: custom:metroenergies-card
-entity: sensor.metroenergies_unofficial_consommation
-title: Consommation Metroenergies
-days: 30
+type: custom:apexcharts-card
+header:
+  title: Consommation Metroenergies
+graph_span: 2months
+series:
+  - entity: sensor.metroenergies_unofficial_consommation
+    type: column
+    name: Consommation
+    data_generator: |
+      const data = entity.attributes.history || [];
+      return data.map(entry => [new Date(entry.date), entry.conso]);
+yaxis:
+  - min: 0
+    decimals: 0
+    apex_config:
+      labels:
+        formatter: |
+          EVAL: (val) => `${val} kWh`
+apex_config:
+  xaxis:
+    labels:
+      format: dd/MM
 ```
+
+`graph_span` contrôle la plage affichée (ex: `30d`, `2months`), et le reste
+des options d'apexcharts-card (couleurs, seuils, tooltips, zoom...)
+s'applique normalement.
 
 ## Licence
 
