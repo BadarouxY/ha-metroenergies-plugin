@@ -5,4 +5,7 @@ DOMAIN = "metroenergies_unofficial"
 CONF_USERNAME = "username"
 CONF_PASSWORD = "password"
 
-DEFAULT_SCAN_INTERVAL_MINUTES = 360
+# metroenergies.fr aggregates the day's consumption once it's over, so we
+# fetch once a day, shortly before midnight, rather than polling repeatedly.
+DAILY_REFRESH_HOUR = 21
+DAILY_REFRESH_MINUTE = 30

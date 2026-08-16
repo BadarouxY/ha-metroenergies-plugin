@@ -14,8 +14,10 @@ etc.) pour les afficher sous forme de graphique dans Home Assistant.
 
 - Configuration via l'interface Home Assistant (Config Flow) avec vos
   identifiants du site.
-- Récupération périodique (toutes les 6h) de l'historique de consommation
-  depuis metroenergies.fr.
+- Récupération de l'historique de consommation depuis metroenergies.fr
+  une fois par jour à heure fixe (21h30), plus une récupération immédiate
+  au démarrage/ajout de l'intégration. Voir la section
+  [Fréquence de mise à jour](#fréquence-de-mise-à-jour).
 - Un capteur `sensor.metroenergies_unofficial_consommation` exposant la
   consommation du dernier jour, avec l'historique complet en attribut
   (`history`, liste de `{date, conso}`).
@@ -76,6 +78,23 @@ show_period_selector: true  # affiche les boutons Jour/Mois/Année
   fixe très ancienne (`HISTORY_START` dans `api.py`, 1er janvier 2010) :
   le site ne renvoie que ce qui existe réellement, donc chacun récupère
   tout son historique quelle que soit l'ancienneté de son contrat.
+
+## Fréquence de mise à jour
+
+L'intégration ne fait **pas** de polling répété sur un intervalle glissant.
+Elle interroge metroenergies.fr :
+
+- une fois immédiatement, au démarrage de Home Assistant ou à l'ajout de
+  l'intégration (pour avoir des données sans attendre le prochain 21h30) ;
+- puis une fois par jour, à **21h30 heure locale du serveur Home Assistant**
+  (`DAILY_REFRESH_HOUR` / `DAILY_REFRESH_MINUTE` dans `const.py`), heure à
+  laquelle le site a normalement fini d'agréger la consommation du jour.
+
+Ce comportement reproduit celui du script AppDaemon d'origine (qui tournait
+une fois par jour via `run_daily`), plutôt qu'un intervalle de rafraîchissement
+classique de type `DataUpdateCoordinator` (ex: toutes les X heures depuis le
+dernier redémarrage). Pour changer l'heure, modifier les constantes dans
+`const.py`.
 
 ## Licence
 

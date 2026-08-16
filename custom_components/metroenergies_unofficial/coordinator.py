@@ -2,19 +2,24 @@
 from __future__ import annotations
 
 import logging
-from datetime import timedelta
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .api import MetroenergiesApiClient, MetroenergiesApiError
-from .const import DEFAULT_SCAN_INTERVAL_MINUTES, DOMAIN
+from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
 
 class MetroenergiesDataUpdateCoordinator(DataUpdateCoordinator[dict]):
-    """Coordinates fetching data from metroenergies.fr on a schedule."""
+    """Fetches data from metroenergies.fr.
+
+    No fixed polling interval: an initial fetch happens at setup, and
+    further refreshes are triggered once a day at a fixed clock time by
+    __init__.py (see DAILY_REFRESH_HOUR/MINUTE in const.py), not on a
+    rolling interval from whenever Home Assistant was last restarted.
+    """
 
     def __init__(self, hass: HomeAssistant, client: MetroenergiesApiClient) -> None:
         self.client = client
@@ -22,7 +27,7 @@ class MetroenergiesDataUpdateCoordinator(DataUpdateCoordinator[dict]):
             hass,
             _LOGGER,
             name=DOMAIN,
-            update_interval=timedelta(minutes=DEFAULT_SCAN_INTERVAL_MINUTES),
+            update_interval=None,
         )
 
     async def _async_update_data(self) -> dict:
