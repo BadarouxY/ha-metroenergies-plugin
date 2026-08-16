@@ -62,9 +62,9 @@ function aggregateByYear(history, count) {
 }
 
 const PERIODS = {
-  day: { label: "Jour", aggregate: aggregateByDay, defaultCount: 30 },
-  month: { label: "Mois", aggregate: aggregateByMonth, defaultCount: 12 },
-  year: { label: "Année", aggregate: aggregateByYear, defaultCount: 5 },
+  day: { label: "Jour", aggregate: aggregateByDay, defaultCount: 30, unitLabel: "jours" },
+  month: { label: "Mois", aggregate: aggregateByMonth, defaultCount: 12, unitLabel: "mois" },
+  year: { label: "Année", aggregate: aggregateByYear, defaultCount: 5, unitLabel: "années" },
 };
 
 class MetroenergiesCard extends HTMLElement {
@@ -83,6 +83,11 @@ class MetroenergiesCard extends HTMLElement {
       ...config,
     };
     this._period = this._config.default_period in PERIODS ? this._config.default_period : "day";
+    this._counts = this._counts || {
+      day: this._config.days,
+      month: this._config.months,
+      year: this._config.years,
+    };
   }
 
   set hass(hass) {
@@ -99,9 +104,7 @@ class MetroenergiesCard extends HTMLElement {
   }
 
   _periodCount(period) {
-    if (period === "day") return this._config.days;
-    if (period === "month") return this._config.months;
-    return this._config.years;
+    return this._counts[period];
   }
 
   _buildSkeleton() {
@@ -113,7 +116,14 @@ class MetroenergiesCard extends HTMLElement {
           .me-title-block { display:flex; flex-direction:column; }
           .me-title { font-size:1.1em; font-weight:500; color: var(--primary-text-color); }
           .me-latest { font-size:1.4em; font-weight:600; color: var(--primary-color); }
-          .me-periods { display:flex; gap:4px; }
+          .me-periods { display:flex; align-items:center; gap:4px; }
+          .me-count-group { display:flex; align-items:center; gap:6px; }
+          .me-count-input {
+            width: 3.5em; padding: 3px 4px; border-radius: 6px; text-align: right;
+            border: 1px solid var(--divider-color); background: var(--card-background-color, #fff);
+            color: var(--primary-text-color); font-size: 0.85em;
+          }
+          .me-count-label { font-size: 0.8em; color: var(--secondary-text-color); margin-right: 8px; }
           .me-period-btn {
             border: none; cursor: pointer; padding: 4px 10px; border-radius: 12px;
             font-size: 0.85em; background: var(--secondary-background-color, #eee);
@@ -141,6 +151,10 @@ class MetroenergiesCard extends HTMLElement {
               <span class="me-latest"></span>
             </div>
             <div class="me-periods"></div>
+            <div class="me-count-group">
+              <span class="me-count-label"></span>
+              <input class="me-count-input" type="number" min="1" max="3650" />
+            </div>
           </div>
           <div class="me-chart-wrap">
             <div class="me-tooltip"></div>
@@ -153,6 +167,8 @@ class MetroenergiesCard extends HTMLElement {
       title: this.querySelector(".me-title"),
       latest: this.querySelector(".me-latest"),
       periods: this.querySelector(".me-periods"),
+      countLabel: this.querySelector(".me-count-label"),
+      countInput: this.querySelector(".me-count-input"),
       chart: this.querySelector(".me-chart"),
       tooltip: this.querySelector(".me-tooltip"),
       chartWrap: this.querySelector(".me-chart-wrap"),
@@ -171,6 +187,12 @@ class MetroenergiesCard extends HTMLElement {
         this._els.periods.appendChild(btn);
       }
     }
+
+    this._els.countInput.addEventListener("change", () => {
+      const value = Math.max(1, Math.min(3650, Math.round(Number(this._els.countInput.value) || 1)));
+      this._counts[this._period] = value;
+      this._render();
+    });
   }
 
   _render() {
@@ -194,6 +216,11 @@ class MetroenergiesCard extends HTMLElement {
 
     for (const btn of periods.querySelectorAll(".me-period-btn")) {
       btn.classList.toggle("active", btn.dataset.period === this._period);
+    }
+
+    this._els.countLabel.textContent = PERIODS[this._period].unitLabel;
+    if (document.activeElement !== this._els.countInput) {
+      this._els.countInput.value = this._counts[this._period];
     }
 
     const history = stateObj.attributes.history || [];

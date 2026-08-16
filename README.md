@@ -67,6 +67,9 @@ show_period_selector: true  # affiche les boutons Jour/Mois/Année
 - Les boutons **Jour / Mois / Année** dans l'en-tête permettent de changer
   de granularité sans toucher à la config (les vues mois/année agrègent
   l'historique quotidien par somme).
+- Le champ numérique à côté des boutons permet de taper directement le
+  nombre de jours/mois/années affichés, sans éditer le YAML (`days`,
+  `months`, `years` ne servent alors que de valeurs de départ).
 - Survoler une barre affiche une infobulle avec la date/période et la
   valeur exacte, et la met en surbrillance.
 - La vue "année" est limitée par la fenêtre d'historique récupérée par
