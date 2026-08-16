@@ -1,6 +1,10 @@
 """The Metroenergies (Unofficial) integration."""
 from __future__ import annotations
 
+from pathlib import Path
+
+from homeassistant.components.frontend import add_extra_js_url
+from homeassistant.components.http import StaticPathConfig
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
@@ -12,9 +16,27 @@ from .coordinator import MetroenergiesDataUpdateCoordinator
 
 PLATFORMS: list[Platform] = [Platform.SENSOR]
 
+CARD_URL = f"/{DOMAIN}/metroenergies-card.js"
+CARD_PATH = Path(__file__).parent / "www" / "metroenergies-card.js"
+_FRONTEND_REGISTERED = f"{DOMAIN}_frontend_registered"
+
+
+async def _async_register_frontend_card(hass: HomeAssistant) -> None:
+    """Serve the bundled card and auto-load it, once, for every dashboard."""
+    if hass.data.get(_FRONTEND_REGISTERED):
+        return
+
+    await hass.http.async_register_static_paths(
+        [StaticPathConfig(CARD_URL, str(CARD_PATH), cache_headers=False)]
+    )
+    add_extra_js_url(hass, CARD_URL)
+    hass.data[_FRONTEND_REGISTERED] = True
+
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Metroenergies (Unofficial) from a config entry."""
+    await _async_register_frontend_card(hass)
+
     session = async_get_clientsession(hass)
     client = MetroenergiesApiClient(
         session,

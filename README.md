@@ -18,8 +18,11 @@ etc.) pour les afficher sous forme de graphique dans Home Assistant.
   depuis metroenergies.fr.
 - Un capteur `sensor.metroenergies_unofficial_consommation` exposant la
   consommation du dernier jour, avec l'historique complet en attribut
-  (`history`, liste de `{date, conso}`) prêt à être graphé (ex: avec
-  [apexcharts-card](https://github.com/RomRider/apexcharts-card)).
+  (`history`, liste de `{date, conso}`).
+- Une carte Lovelace dédiée (`custom:metroenergies-card`), fournie et
+  enregistrée automatiquement par l'intégration : sélecteur de période
+  (jour/mois/année), plage configurable, échelle Y configurable, tooltip
+  et mise en surbrillance au survol.
 
 ## Installation
 
@@ -44,41 +47,31 @@ passe du site.
 
 ## Carte Lovelace
 
-Cette intégration n'embarque pas sa propre carte de graphique : elle expose
-les données et laisse le choix de la carte d'affichage. La carte recommandée
-est [apexcharts-card](https://github.com/RomRider/apexcharts-card)
-(disponible via HACS, catégorie "Frontend"), qui permet de configurer
-finement la plage de jours, les échelles et la mise en surbrillance des
-valeurs :
+La carte `metroenergies-card` est fournie par l'intégration et s'enregistre
+automatiquement — rien à installer en plus. Ajouter au dashboard :
 
 ```yaml
-type: custom:apexcharts-card
-header:
-  title: Consommation Metroenergies
-graph_span: 2months
-series:
-  - entity: sensor.metroenergies_unofficial_consommation
-    type: column
-    name: Consommation
-    data_generator: |
-      const data = entity.attributes.history || [];
-      return data.map(entry => [new Date(entry.date), entry.conso]);
-yaxis:
-  - min: 0
-    decimals: 0
-    apex_config:
-      labels:
-        formatter: |
-          EVAL: (val) => `${val} kWh`
-apex_config:
-  xaxis:
-    labels:
-      format: dd/MM
+type: custom:metroenergies-card
+entity: sensor.metroenergies_unofficial_consommation
+title: Consommation
+unit: kWh
+default_period: day   # day | month | year
+days: 30               # nb de jours affichés en vue "day"
+months: 12              # nb de mois affichés en vue "month"
+years: 5                 # nb d'années affichées en vue "year"
+y_min: 0                  # optionnel, sinon calculé automatiquement
+y_max: null                # optionnel, sinon calculé automatiquement
+show_period_selector: true  # affiche les boutons Jour/Mois/Année
 ```
 
-`graph_span` contrôle la plage affichée (ex: `30d`, `2months`), et le reste
-des options d'apexcharts-card (couleurs, seuils, tooltips, zoom...)
-s'applique normalement.
+- Les boutons **Jour / Mois / Année** dans l'en-tête permettent de changer
+  de granularité sans toucher à la config (les vues mois/année agrègent
+  l'historique quotidien par somme).
+- Survoler une barre affiche une infobulle avec la date/période et la
+  valeur exacte, et la met en surbrillance.
+- La vue "année" est limitée par la fenêtre d'historique récupérée par
+  l'intégration (2 ans glissants, voir `HISTORY_WINDOW` dans `api.py`) —
+  à étendre si besoin de plus de recul.
 
 ## Licence
 
