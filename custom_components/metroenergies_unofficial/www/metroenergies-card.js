@@ -133,7 +133,9 @@ class MetroenergiesCard extends HTMLElement {
           .me-bar { fill: var(--me-bar-color, var(--primary-color)); cursor: pointer; }
           .me-bar:hover { opacity: 0.85; }
           .me-axis-line { stroke: var(--divider-color); stroke-width: 1; }
-          .me-axis-label { fill: var(--secondary-text-color); font-size: 9px; }
+          .me-axis-label { fill: var(--secondary-text-color); font-size: 12px; }
+          .me-total { margin-top: 10px; text-align: right; font-size: 0.85em; color: var(--secondary-text-color); }
+          .me-total strong { color: var(--primary-text-color); font-weight: 600; }
           .me-tooltip {
             position: absolute; pointer-events: none; padding: 4px 8px; border-radius: 4px;
             background: var(--card-background-color, #fff); border: 1px solid var(--divider-color);
@@ -156,6 +158,7 @@ class MetroenergiesCard extends HTMLElement {
             <div class="me-tooltip"></div>
             <div class="me-chart"></div>
           </div>
+          <div class="me-total"></div>
         </div>
       </ha-card>
     `;
@@ -166,6 +169,7 @@ class MetroenergiesCard extends HTMLElement {
       chart: this.querySelector(".me-chart"),
       tooltip: this.querySelector(".me-tooltip"),
       chartWrap: this.querySelector(".me-chart-wrap"),
+      total: this.querySelector(".me-total"),
     };
 
     if (this._config.show_period_selector) {
@@ -220,20 +224,24 @@ class MetroenergiesCard extends HTMLElement {
 
     if (data.length === 0) {
       chart.innerHTML = `<div class="me-empty">Pas encore de données</div>`;
+      this._els.total.textContent = "";
       return;
     }
 
     chart.innerHTML = this._buildChart(data);
     this._attachInteractions(data);
+
+    const total = data.reduce((sum, entry) => sum + entry.value, 0);
+    this._els.total.innerHTML = `Total : <strong>${formatNumber(total)} ${this._config.unit}</strong>`;
   }
 
   _buildChart(data) {
     const width = 600;
-    const height = 220;
-    const padLeft = 42;
+    const height = 230;
+    const padLeft = 52;
     const padRight = 8;
-    const padTop = 12;
-    const padBottom = 26;
+    const padTop = 14;
+    const padBottom = 34;
     const plotWidth = width - padLeft - padRight;
     const plotHeight = height - padTop - padBottom;
 

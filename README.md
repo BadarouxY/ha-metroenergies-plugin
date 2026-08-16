@@ -90,6 +90,8 @@ Options disponibles :
   `months`, `years` ne servent alors que de valeurs de départ).
 - Survoler une barre affiche une infobulle avec la date/période et la
   valeur exacte, et la met en surbrillance.
+- Le total de toutes les valeurs affichées (somme des barres visibles à
+  l'écran) s'affiche sous le graphique.
 - L'intégration récupère l'historique complet depuis une date de départ
   fixe très ancienne (`HISTORY_START` dans `api.py`, 1er janvier 2010) :
   le site ne renvoie que ce qui existe réellement, donc chacun récupère
