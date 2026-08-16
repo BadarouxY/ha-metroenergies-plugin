@@ -14,9 +14,14 @@ etc.) pour les afficher sous forme de graphique dans Home Assistant.
 
 - Configuration via l'interface Home Assistant (Config Flow) avec vos
   identifiants du site.
-- Récupération périodique des données depuis metroenergies.fr.
-- Exposition des données sous forme de capteur(s) exploitables dans
-  l'historique / les graphiques Home Assistant.
+- Récupération périodique (toutes les 6h) de l'historique de consommation
+  depuis metroenergies.fr.
+- Un capteur `sensor.metroenergies_unofficial_consommation` exposant la
+  consommation du dernier jour, avec l'historique complet en attribut
+  (`history`).
+- Une carte Lovelace dédiée (`custom:metroenergies-card`), fournie et
+  enregistrée automatiquement par l'intégration — pas besoin d'installer
+  une carte tierce.
 
 ## Installation
 
@@ -39,11 +44,16 @@ Paramètres → Appareils et services → Ajouter une intégration →
 "Metroenergies (Unofficial)", puis renseigner votre identifiant et mot de
 passe du site.
 
-## État du projet
+## Carte Lovelace
 
-🚧 En cours de développement — la logique de connexion/récupération des
-données (`custom_components/metroenergies_unofficial/api.py`) est un
-placeholder à compléter.
+Ajouter une carte au dashboard avec :
+
+```yaml
+type: custom:metroenergies-card
+entity: sensor.metroenergies_unofficial_consommation
+title: Consommation Metroenergies
+days: 30
+```
 
 ## Licence
 

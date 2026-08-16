@@ -1,19 +1,10 @@
-"""Sensor platform for the Metroenergies (Unofficial) integration.
-
-The sensor(s) below are placeholders: once the real data shape returned
-by MetroenergiesApiClient.async_get_data() is known, adjust the keys,
-device_class, state_class and unit_of_measurement accordingly so the
-values plot correctly as a graph / feed the Energy dashboard.
-"""
+"""Sensor platform for the Metroenergies (Unofficial) integration."""
 from __future__ import annotations
 
-from homeassistant.components.sensor import (
-    SensorDeviceClass,
-    SensorEntity,
-    SensorStateClass,
-)
+from homeassistant.components.sensor import SensorDeviceClass, SensorEntity, SensorStateClass
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
@@ -37,11 +28,11 @@ async def async_setup_entry(
 class MetroenergiesConsumptionSensor(
     CoordinatorEntity[MetroenergiesDataUpdateCoordinator], SensorEntity
 ):
-    """Placeholder sensor exposing a consumption value from metroenergies.fr."""
+    """Exposes the latest daily consumption, with the full history as an attribute."""
 
     _attr_has_entity_name = True
     _attr_device_class = SensorDeviceClass.ENERGY
-    _attr_state_class = SensorStateClass.TOTAL_INCREASING
+    _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_native_unit_of_measurement = "kWh"
     _attr_translation_key = SENSOR_KEY_CONSUMPTION
 
@@ -52,8 +43,19 @@ class MetroenergiesConsumptionSensor(
     ) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{entry.entry_id}_{SENSOR_KEY_CONSUMPTION}"
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, entry.entry_id)},
+            name="Metroenergies (Unofficial)",
+            manufacturer="Metroenergies (non officiel)",
+            entry_type=DeviceEntryType.SERVICE,
+        )
 
     @property
     def native_value(self):
-        """Return the current value from the coordinator's data."""
-        return (self.coordinator.data or {}).get(SENSOR_KEY_CONSUMPTION)
+        """Return the latest day's consumption."""
+        return (self.coordinator.data or {}).get("latest")
+
+    @property
+    def extra_state_attributes(self):
+        """Return the full consumption history for graphing."""
+        return {"history": (self.coordinator.data or {}).get("history", [])}
