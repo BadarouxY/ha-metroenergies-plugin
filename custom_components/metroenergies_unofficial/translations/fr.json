@@ -8,6 +8,21 @@
           "username": "Identifiant",
           "password": "Mot de passe"
         }
+      },
+      "reauth_confirm": {
+        "title": "Ré-authentification metroenergies.fr",
+        "description": "Le mot de passe pour {username} ne fonctionne plus. Entrez le nouveau mot de passe.",
+        "data": {
+          "password": "Mot de passe"
+        }
+      },
+      "reconfigure": {
+        "title": "Mettre à jour les identifiants metroenergies.fr",
+        "description": "Mettez à jour l'identifiant/mot de passe utilisés pour vous connecter à metroenergies.fr.",
+        "data": {
+          "username": "Identifiant",
+          "password": "Mot de passe"
+        }
       }
     },
     "error": {
@@ -16,7 +31,9 @@
       "unknown": "Erreur inattendue."
     },
     "abort": {
-      "already_configured": "Ce compte est déjà configuré."
+      "already_configured": "Ce compte est déjà configuré.",
+      "reauth_successful": "Ré-authentification réussie.",
+      "reconfigure_successful": "Les identifiants ont été mis à jour avec succès."
     }
   },
   "entity": {

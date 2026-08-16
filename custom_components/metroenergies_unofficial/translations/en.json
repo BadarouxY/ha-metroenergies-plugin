@@ -8,6 +8,21 @@
           "username": "Username",
           "password": "Password"
         }
+      },
+      "reauth_confirm": {
+        "title": "Re-authenticate with metroenergies.fr",
+        "description": "The password for {username} no longer works. Enter the new password.",
+        "data": {
+          "password": "Password"
+        }
+      },
+      "reconfigure": {
+        "title": "Update metroenergies.fr credentials",
+        "description": "Update the username/password used to connect to metroenergies.fr.",
+        "data": {
+          "username": "Username",
+          "password": "Password"
+        }
       }
     },
     "error": {
@@ -16,7 +31,9 @@
       "unknown": "Unexpected error."
     },
     "abort": {
-      "already_configured": "This account is already configured."
+      "already_configured": "This account is already configured.",
+      "reauth_successful": "Re-authentication was successful.",
+      "reconfigure_successful": "The credentials were updated successfully."
     }
   },
   "entity": {

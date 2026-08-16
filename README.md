@@ -47,6 +47,15 @@ Paramètres → Appareils et services → Ajouter une intégration →
 "Metroenergies (Unofficial)", puis renseigner votre identifiant et mot de
 passe du site.
 
+- **Mot de passe oublié/changé sur le site** : si les identifiants stockés
+  ne fonctionnent plus, Home Assistant déclenche automatiquement un écran
+  de ré-authentification (notification "Nouvelle authentification requise"
+  sur la carte de l'intégration) pour ressaisir le mot de passe, sans avoir
+  à supprimer/recréer l'intégration.
+- **Changer l'identifiant/mot de passe manuellement** : menu ⋮ sur
+  l'intégration → "Reconfigurer", à tout moment, même si les identifiants
+  actuels fonctionnent encore.
+
 ## Carte Lovelace
 
 La carte `metroenergies-card` est fournie par l'intégration et s'enregistre

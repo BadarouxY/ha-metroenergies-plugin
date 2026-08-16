@@ -59,7 +59,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         entry.data[CONF_PASSWORD],
     )
 
-    coordinator = MetroenergiesDataUpdateCoordinator(hass, client)
+    coordinator = MetroenergiesDataUpdateCoordinator(hass, entry, client)
     await coordinator.async_config_entry_first_refresh()
 
     async def _handle_daily_refresh(_now) -> None:
