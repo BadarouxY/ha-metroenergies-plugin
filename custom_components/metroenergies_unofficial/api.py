@@ -10,6 +10,7 @@ import logging
 from datetime import datetime, timezone
 
 import aiohttp
+from homeassistant.util import dt as dt_util
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -116,8 +117,13 @@ class MetroenergiesApiClient:
             conso = entry.get("conso") or 0
             if not conso:
                 continue
-            entry_date = datetime.fromtimestamp(
-                entry["date"] / 1000, tz=timezone.utc
+            # The API's timestamp represents local midnight (Europe/Paris)
+            # for that calendar day. Converting it via UTC directly would
+            # shift it to the evening before, flipping the date back by
+            # one day - convert to Home Assistant's configured local
+            # timezone first instead.
+            entry_date = dt_util.as_local(
+                dt_util.utc_from_timestamp(entry["date"] / 1000)
             ).strftime("%Y-%m-%d")
             history.append({"date": entry_date, "conso": conso})
 
