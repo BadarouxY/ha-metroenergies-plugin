@@ -1,0 +1,11 @@
+{
+  "domain": "metroenergies_unofficial",
+  "name": "Metroenergies (Unofficial)",
+  "codeowners": [],
+  "config_flow": true,
+  "documentation": "https://github.com/YOUR_GITHUB_USERNAME/ha-metroenergies-plugin",
+  "issue_tracker": "https://github.com/YOUR_GITHUB_USERNAME/ha-metroenergies-plugin/issues",
+  "iot_class": "cloud_polling",
+  "requirements": [],
+  "version": "0.1.0"
+}
