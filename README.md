@@ -56,6 +56,8 @@ automatiquement — rien à installer en plus. Ajouter au dashboard :
 type: custom:metroenergies-card
 entity: sensor.metroenergies_unofficial_consommation
 unit: kWh
+title: null                # optionnel, masqué si non défini
+color: null                  # optionnel, ex: "#ff9800" ou "var(--primary-color)"
 default_period: day   # day | month | year
 days: 30               # nb de jours affichés en vue "day"
 months: 12              # nb de mois affichés en vue "month"
@@ -65,6 +67,10 @@ y_max: null                # optionnel, sinon calculé automatiquement
 show_period_selector: true  # affiche les boutons Jour/Mois/Année
 ```
 
+- `title` : si renseigné, affiche un titre au-dessus du graphique (rien
+  n'est affiché si le champ est absent/vide).
+- `color` : couleur des barres (n'importe quelle valeur CSS valide,
+  variable de thème HA incluse). Par défaut `var(--primary-color)`.
 - Les boutons **Jour / Mois / Année** dans l'en-tête permettent de changer
   de granularité sans toucher à la config (les vues mois/année agrègent
   l'historique quotidien par somme).

@@ -74,6 +74,8 @@ class MetroenergiesCard extends HTMLElement {
     }
     this._config = {
       unit: "kWh",
+      title: null,
+      color: null,
       default_period: "day",
       days: PERIODS.day.defaultCount,
       months: PERIODS.month.defaultCount,
@@ -111,6 +113,7 @@ class MetroenergiesCard extends HTMLElement {
       <ha-card>
         <style>
           .me-content { padding: 16px; }
+          .me-card-title { font-size:1.1em; font-weight:500; color: var(--primary-text-color); margin-bottom: 8px; }
           .me-header { display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px; gap: 8px; flex-wrap: wrap; }
           .me-periods { display:flex; align-items:center; gap:4px; }
           .me-count-group { display:flex; align-items:center; gap:6px; }
@@ -127,8 +130,8 @@ class MetroenergiesCard extends HTMLElement {
           }
           .me-period-btn.active { background: var(--primary-color); color: var(--text-primary-color, #fff); }
           .me-chart-wrap { position: relative; }
-          .me-bar { fill: var(--primary-color); cursor: pointer; }
-          .me-bar:hover { fill: var(--accent-color, var(--primary-color)); opacity: 0.85; }
+          .me-bar { fill: var(--me-bar-color, var(--primary-color)); cursor: pointer; }
+          .me-bar:hover { opacity: 0.85; }
           .me-axis-line { stroke: var(--divider-color); stroke-width: 1; }
           .me-axis-label { fill: var(--secondary-text-color); font-size: 9px; }
           .me-tooltip {
@@ -140,7 +143,8 @@ class MetroenergiesCard extends HTMLElement {
           }
           .me-empty { color: var(--secondary-text-color); padding: 24px 0; text-align: center; }
         </style>
-        <div class="me-content">
+        <div class="me-content" style="${this._config.color ? `--me-bar-color:${this._config.color};` : ""}">
+          ${this._config.title ? `<div class="me-card-title">${this._config.title}</div>` : ""}
           <div class="me-header">
             <div class="me-periods"></div>
             <div class="me-count-group">
