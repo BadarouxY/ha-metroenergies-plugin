@@ -73,7 +73,6 @@ class MetroenergiesCard extends HTMLElement {
       throw new Error("Vous devez définir une entité (entity) dans la configuration de la carte.");
     }
     this._config = {
-      title: "Consommation",
       unit: "kWh",
       default_period: "day",
       days: PERIODS.day.defaultCount,
@@ -113,9 +112,6 @@ class MetroenergiesCard extends HTMLElement {
         <style>
           .me-content { padding: 16px; }
           .me-header { display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px; gap: 8px; flex-wrap: wrap; }
-          .me-title-block { display:flex; flex-direction:column; }
-          .me-title { font-size:1.1em; font-weight:500; color: var(--primary-text-color); }
-          .me-latest { font-size:1.4em; font-weight:600; color: var(--primary-color); }
           .me-periods { display:flex; align-items:center; gap:4px; }
           .me-count-group { display:flex; align-items:center; gap:6px; }
           .me-count-input {
@@ -146,10 +142,6 @@ class MetroenergiesCard extends HTMLElement {
         </style>
         <div class="me-content">
           <div class="me-header">
-            <div class="me-title-block">
-              <span class="me-title"></span>
-              <span class="me-latest"></span>
-            </div>
             <div class="me-periods"></div>
             <div class="me-count-group">
               <span class="me-count-label"></span>
@@ -164,8 +156,6 @@ class MetroenergiesCard extends HTMLElement {
       </ha-card>
     `;
     this._els = {
-      title: this.querySelector(".me-title"),
-      latest: this.querySelector(".me-latest"),
       periods: this.querySelector(".me-periods"),
       countLabel: this.querySelector(".me-count-label"),
       countInput: this.querySelector(".me-count-input"),
@@ -203,13 +193,10 @@ class MetroenergiesCard extends HTMLElement {
       this._buildSkeleton();
     }
 
-    const { title, latest, periods, chart } = this._els;
+    const { periods, chart } = this._els;
     const stateObj = this._hass.states[this._config.entity];
 
-    title.textContent = this._config.title;
-
     if (!stateObj) {
-      latest.textContent = "";
       chart.innerHTML = `<div class="me-empty">Entité ${this._config.entity} introuvable</div>`;
       return;
     }
@@ -228,13 +215,9 @@ class MetroenergiesCard extends HTMLElement {
     const data = periodDef.aggregate(history, this._periodCount(this._period));
 
     if (data.length === 0) {
-      latest.textContent = "";
       chart.innerHTML = `<div class="me-empty">Pas encore de données</div>`;
       return;
     }
-
-    const latestValue = data[data.length - 1].value;
-    latest.textContent = `${formatNumber(latestValue)} ${this._config.unit}`;
 
     chart.innerHTML = this._buildChart(data);
     this._attachInteractions(data);

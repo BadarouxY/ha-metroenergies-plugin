@@ -55,7 +55,6 @@ automatiquement — rien à installer en plus. Ajouter au dashboard :
 ```yaml
 type: custom:metroenergies-card
 entity: sensor.metroenergies_unofficial_consommation
-title: Consommation
 unit: kWh
 default_period: day   # day | month | year
 days: 30               # nb de jours affichés en vue "day"
