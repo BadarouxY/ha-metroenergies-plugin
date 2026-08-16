@@ -9,6 +9,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.loader import async_get_integration
 
 from .api import MetroenergiesApiClient
 from .const import CONF_PASSWORD, CONF_USERNAME, DOMAIN
@@ -22,14 +23,21 @@ _FRONTEND_REGISTERED = f"{DOMAIN}_frontend_registered"
 
 
 async def _async_register_frontend_card(hass: HomeAssistant) -> None:
-    """Serve the bundled card and auto-load it, once, for every dashboard."""
+    """Serve the bundled card and auto-load it, once, for every dashboard.
+
+    The URL is suffixed with the integration version so that browsers
+    (which otherwise cache a fixed script URL indefinitely) fetch a fresh
+    copy whenever the integration is updated.
+    """
     if hass.data.get(_FRONTEND_REGISTERED):
         return
+
+    integration = await async_get_integration(hass, DOMAIN)
 
     await hass.http.async_register_static_paths(
         [StaticPathConfig(CARD_URL, str(CARD_PATH), cache_headers=False)]
     )
-    add_extra_js_url(hass, CARD_URL)
+    add_extra_js_url(hass, f"{CARD_URL}?v={integration.version}")
     hass.data[_FRONTEND_REGISTERED] = True
 
 
