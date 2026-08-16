@@ -7,7 +7,7 @@ official public API is provided.
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 
 import aiohttp
 
@@ -18,9 +18,11 @@ EXPORT_URL = "https://www.metroenergies.fr/S2G-MT-Usager-Back/rest/mt/usager/con
 
 REQUEST_TIMEOUT = aiohttp.ClientTimeout(total=30)
 
-# The site does not expose a "since account creation" query, so we simply
-# ask for a wide rolling window; it returns whatever real data exists in it.
-HISTORY_WINDOW = timedelta(days=730)
+# The site does not expose a "since account creation" query, so we ask from
+# a fixed date far before any real contract could have started; the site
+# just returns whatever history actually exists after that, whatever the
+# account's age.
+HISTORY_START = datetime(2010, 1, 1, tzinfo=timezone.utc)
 
 
 class MetroenergiesApiError(Exception):
@@ -83,10 +85,9 @@ class MetroenergiesApiClient:
         token = await self._async_login()
 
         date_fin = datetime.now(timezone.utc)
-        date_debut = date_fin - HISTORY_WINDOW
 
         params = {
-            "dateDebut": str(int(date_debut.timestamp() * 1000)),
+            "dateDebut": str(int(HISTORY_START.timestamp() * 1000)),
             "dateFin": str(int(date_fin.timestamp() * 1000)),
             "decimalSeparor": ".",
             "fluids": "E",

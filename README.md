@@ -72,9 +72,10 @@ show_period_selector: true  # affiche les boutons Jour/Mois/Année
   `months`, `years` ne servent alors que de valeurs de départ).
 - Survoler une barre affiche une infobulle avec la date/période et la
   valeur exacte, et la met en surbrillance.
-- La vue "année" est limitée par la fenêtre d'historique récupérée par
-  l'intégration (2 ans glissants, voir `HISTORY_WINDOW` dans `api.py`) —
-  à étendre si besoin de plus de recul.
+- L'intégration récupère l'historique complet depuis une date de départ
+  fixe très ancienne (`HISTORY_START` dans `api.py`, 1er janvier 2010) :
+  le site ne renvoie que ce qui existe réellement, donc chacun récupère
+  tout son historique quelle que soit l'ancienneté de son contrat.
 
 ## Licence
 
