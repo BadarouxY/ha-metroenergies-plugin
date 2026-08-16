@@ -55,22 +55,24 @@ automatiquement — rien à installer en plus. Ajouter au dashboard :
 ```yaml
 type: custom:metroenergies-card
 entity: sensor.metroenergies_unofficial_consommation
-unit: kWh
-title: null                # optionnel, masqué si non défini
-color: null                  # optionnel, ex: "#ff9800" ou "var(--primary-color)"
-default_period: day   # day | month | year
-days: 30               # nb de jours affichés en vue "day"
-months: 12              # nb de mois affichés en vue "month"
-years: 5                 # nb d'années affichées en vue "year"
-y_min: 0                  # optionnel, sinon calculé automatiquement
-y_max: null                # optionnel, sinon calculé automatiquement
-show_period_selector: true  # affiche les boutons Jour/Mois/Année
 ```
 
-- `title` : si renseigné, affiche un titre au-dessus du graphique (rien
-  n'est affiché si le champ est absent/vide).
-- `color` : couleur des barres (n'importe quelle valeur CSS valide,
-  variable de thème HA incluse). Par défaut `var(--primary-color)`.
+Options disponibles :
+
+| Option | Défaut | Description |
+| --- | --- | --- |
+| `entity` | *(requis)* | Entité du capteur exposant l'attribut `history`. |
+| `unit` | `kWh` | Unité affichée dans les infobulles. |
+| `title` | *(absent)* | Titre au-dessus du graphique. Rien n'est affiché si non renseigné. |
+| `color` | `var(--primary-color)` | Couleur des barres (valeur CSS ou variable de thème HA). |
+| `default_period` | `day` | Période initiale : `day`, `month` ou `year`. |
+| `days` | `30` | Valeur de départ du nombre de jours en vue "jour" (modifiable ensuite dans la carte, voir plus bas). |
+| `months` | `12` | Valeur de départ du nombre de mois en vue "mois". |
+| `years` | `5` | Valeur de départ du nombre d'années en vue "année". |
+| `y_min` | `0` | Valeur minimale fixe de l'axe Y. |
+| `y_max` | *(absent)* | Valeur maximale fixe de l'axe Y. Si absent, calculée automatiquement à partir du maximum affiché (+15% de marge). |
+| `show_period_selector` | `true` | Affiche les boutons Jour/Mois/Année. |
+
 - Les boutons **Jour / Mois / Année** dans l'en-tête permettent de changer
   de granularité sans toucher à la config (les vues mois/année agrègent
   l'historique quotidien par somme).
@@ -91,14 +93,11 @@ Elle interroge metroenergies.fr :
 
 - une fois immédiatement, au démarrage de Home Assistant ou à l'ajout de
   l'intégration (pour avoir des données sans attendre le prochain 21h30) ;
-- puis une fois par jour, à **21h30 heure locale du serveur Home Assistant**
-  (`DAILY_REFRESH_HOUR` / `DAILY_REFRESH_MINUTE` dans `const.py`), heure à
-  laquelle le site a normalement fini d'agréger la consommation du jour.
+- puis une fois par jour, à **21h30 heure locale du serveur Home Assistant**,
+  heure à laquelle le site a normalement fini d'agréger la consommation du
+  jour.
 
-Ce comportement reproduit celui du script AppDaemon d'origine (qui tournait
-une fois par jour via `run_daily`), plutôt qu'un intervalle de rafraîchissement
-classique de type `DataUpdateCoordinator` (ex: toutes les X heures depuis le
-dernier redémarrage). Pour changer l'heure, modifier les constantes dans
+L'heure se change via `DAILY_REFRESH_HOUR` / `DAILY_REFRESH_MINUTE` dans
 `const.py`.
 
 ## Licence
