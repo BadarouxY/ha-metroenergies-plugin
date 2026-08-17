@@ -32,9 +32,13 @@ _FRONTEND_REGISTERED = f"{DOMAIN}_frontend_registered"
 async def _async_register_frontend_card(hass: HomeAssistant) -> None:
     """Serve the bundled card and auto-load it, once, for every dashboard.
 
-    The URL is suffixed with the integration version so that browsers
-    (which otherwise cache a fixed script URL indefinitely) fetch a fresh
-    copy whenever the integration is updated.
+    The URL is suffixed with the integration version, so the browser cache
+    is left on (cache_headers=True): a version bump changes the URL and
+    naturally busts the cache, while unchanged versions load instantly from
+    cache instead of re-fetching over the network on every dashboard load
+    (which, on slow/high-latency connections, can lose the race against
+    Lovelace's custom-element-registration timeout and surface as a
+    "custom element not found" error for the card).
     """
     if hass.data.get(_FRONTEND_REGISTERED):
         return
@@ -42,7 +46,7 @@ async def _async_register_frontend_card(hass: HomeAssistant) -> None:
     integration = await async_get_integration(hass, DOMAIN)
 
     await hass.http.async_register_static_paths(
-        [StaticPathConfig(CARD_URL, str(CARD_PATH), cache_headers=False)]
+        [StaticPathConfig(CARD_URL, str(CARD_PATH), cache_headers=True)]
     )
     add_extra_js_url(hass, f"{CARD_URL}?v={integration.version}")
     hass.data[_FRONTEND_REGISTERED] = True
