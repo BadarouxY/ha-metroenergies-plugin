@@ -3,9 +3,10 @@
   "name": "Metroenergies (Unofficial)",
   "codeowners": ["@BadarouxY"],
   "config_flow": true,
+  "dependencies": ["lovelace"],
   "documentation": "https://github.com/BadarouxY/ha-metroenergies-plugin",
   "issue_tracker": "https://github.com/BadarouxY/ha-metroenergies-plugin/issues",
   "iot_class": "cloud_polling",
   "requirements": [],
-  "version": "0.5.1"
+  "version": "0.5.2"
 }

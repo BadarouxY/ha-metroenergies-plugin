@@ -5,11 +5,13 @@ from pathlib import Path
 
 from homeassistant.components.frontend import add_extra_js_url
 from homeassistant.components.http import StaticPathConfig
+from homeassistant.components.lovelace.const import LOVELACE_DATA, MODE_STORAGE
+from homeassistant.components.lovelace.resources import ResourceStorageCollection
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
-from homeassistant.helpers.event import async_track_time_change
+from homeassistant.helpers.event import async_call_later, async_track_time_change
 from homeassistant.loader import async_get_integration
 
 from .api import MetroenergiesApiClient
@@ -32,24 +34,60 @@ _FRONTEND_REGISTERED = f"{DOMAIN}_frontend_registered"
 async def _async_register_frontend_card(hass: HomeAssistant) -> None:
     """Serve the bundled card and auto-load it, once, for every dashboard.
 
-    The URL is suffixed with the integration version, so the browser cache
-    is left on (cache_headers=True): a version bump changes the URL and
-    naturally busts the cache, while unchanged versions load instantly from
-    cache instead of re-fetching over the network on every dashboard load
-    (which, on slow/high-latency connections, can lose the race against
-    Lovelace's custom-element-registration timeout and surface as a
-    "custom element not found" error for the card).
+    Registered as a Lovelace resource rather than via add_extra_js_url:
+    Lovelace explicitly waits for its resources to finish loading before it
+    creates any card, so the card's custom element is guaranteed to be
+    defined in time. add_extra_js_url only injects a <script> tag with no
+    such coordination, which races against Lovelace's own card creation --
+    a race that faster desktops usually win but slower devices (observed
+    consistently on mobile) reliably lose, surfacing as a permanent
+    "custom element not found" error.
+
+    Falls back to add_extra_js_url for YAML-mode dashboards, where there is
+    no resource storage to register against.
     """
     if hass.data.get(_FRONTEND_REGISTERED):
         return
 
     integration = await async_get_integration(hass, DOMAIN)
+    url = f"{CARD_URL}?v={integration.version}"
 
     await hass.http.async_register_static_paths(
         [StaticPathConfig(CARD_URL, str(CARD_PATH), cache_headers=True)]
     )
-    add_extra_js_url(hass, f"{CARD_URL}?v={integration.version}")
+
+    lovelace = hass.data.get(LOVELACE_DATA)
+    if lovelace is None or lovelace.resource_mode != MODE_STORAGE:
+        add_extra_js_url(hass, url)
+    else:
+        await _async_register_lovelace_resource(hass, lovelace.resources, url)
+
     hass.data[_FRONTEND_REGISTERED] = True
+
+
+async def _async_register_lovelace_resource(
+    hass: HomeAssistant, resources: ResourceStorageCollection, url: str
+) -> None:
+    """Add (or update, on a version bump) our card as a Lovelace resource."""
+    path = url.split("?", 1)[0]
+
+    async def _try_register(_now=None) -> None:
+        if not resources.loaded:
+            async_call_later(hass, 5, _try_register)
+            return
+
+        existing = next(
+            (r for r in resources.async_items() if r["url"].split("?", 1)[0] == path),
+            None,
+        )
+        if existing is None:
+            await resources.async_create_item({"res_type": "module", "url": url})
+        elif existing["url"] != url:
+            await resources.async_update_item(
+                existing["id"], {"res_type": "module", "url": url}
+            )
+
+    await _try_register()
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
