@@ -18,8 +18,27 @@ function formatNumber(value) {
   return Math.round(value * 10) / 10;
 }
 
-function aggregateByDay(history, count) {
-  return history.slice(-count).map((entry) => {
+function todayISO() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+}
+
+function addDays(dateStr, delta) {
+  const { y, m, d } = parseDate(dateStr);
+  const date = new Date(Date.UTC(y, m - 1, d));
+  date.setUTCDate(date.getUTCDate() + delta);
+  return date.toISOString().slice(0, 10);
+}
+
+function filterByRange(history, start, end) {
+  return history.filter((entry) => (!start || entry.date >= start) && (!end || entry.date <= end));
+}
+
+// count is only used in rolling-window mode (last N buckets); range mode
+// pre-filters history to the chosen bounds and keeps every bucket in it.
+function aggregateByDay(history, count = Infinity) {
+  const sliced = Number.isFinite(count) ? history.slice(-count) : history;
+  return sliced.map((entry) => {
     const { m, d } = parseDate(entry.date);
     return {
       key: entry.date,
@@ -29,14 +48,15 @@ function aggregateByDay(history, count) {
   });
 }
 
-function aggregateByMonth(history, count) {
+function aggregateByMonth(history, count = Infinity) {
   const totals = new Map();
   for (const entry of history) {
     const { y, m } = parseDate(entry.date);
     const key = `${y}-${String(m).padStart(2, "0")}`;
     totals.set(key, (totals.get(key) || 0) + entry.conso);
   }
-  const keys = [...totals.keys()].sort().slice(-count);
+  const sortedKeys = [...totals.keys()].sort();
+  const keys = Number.isFinite(count) ? sortedKeys.slice(-count) : sortedKeys;
   return keys.map((key) => {
     const [y, m] = key.split("-").map(Number);
     return {
@@ -47,13 +67,14 @@ function aggregateByMonth(history, count) {
   });
 }
 
-function aggregateByYear(history, count) {
+function aggregateByYear(history, count = Infinity) {
   const totals = new Map();
   for (const entry of history) {
     const { y } = parseDate(entry.date);
     totals.set(y, (totals.get(y) || 0) + entry.conso);
   }
-  const keys = [...totals.keys()].sort().slice(-count);
+  const sortedKeys = [...totals.keys()].sort();
+  const keys = Number.isFinite(count) ? sortedKeys.slice(-count) : sortedKeys;
   return keys.map((y) => ({
     key: String(y),
     label: String(y),
@@ -89,6 +110,11 @@ class MetroenergiesCard extends HTMLElement {
       month: this._config.months,
       year: this._config.years,
     };
+    this._mode = this._mode || "rolling";
+    if (!this._range) {
+      const end = todayISO();
+      this._range = { start: addDays(end, -29), end };
+    }
   }
 
   set hass(hass) {
@@ -183,14 +209,17 @@ class MetroenergiesCard extends HTMLElement {
         <style>
           .me-content { padding: 16px; }
           .me-card-title { font-size:1.1em; font-weight:500; color: var(--primary-text-color); margin-bottom: 8px; }
-          .me-header { display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px; gap: 8px; flex-wrap: wrap; }
-          .me-periods { display:flex; align-items:center; gap:4px; }
-          .me-count-group { display:flex; align-items:center; gap:6px; }
-          .me-count-input {
-            width: 3.5em; padding: 3px 4px; border-radius: 6px; text-align: right;
+          .me-header { display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px; gap: 8px; flex-wrap: wrap; }
+          .me-subheader { display:flex; justify-content:flex-end; align-items:center; margin-bottom: 12px; gap: 8px; flex-wrap: wrap; }
+          .me-periods, .me-mode-group { display:flex; align-items:center; gap:4px; }
+          .me-count-group, .me-range-group { display:flex; align-items:center; gap:6px; }
+          .me-count-input, .me-range-input {
+            padding: 3px 4px; border-radius: 6px;
             border: 1px solid var(--divider-color); background: var(--card-background-color, #fff);
             color: var(--primary-text-color); font-size: 0.85em;
           }
+          .me-count-input { width: 3.5em; text-align: right; }
+          .me-range-sep { color: var(--secondary-text-color); font-size: 0.8em; }
           .me-count-label { font-size: 0.8em; color: var(--secondary-text-color); margin-right: 8px; }
           .me-period-btn {
             border: none; cursor: pointer; padding: 4px 10px; border-radius: 12px;
@@ -218,9 +247,20 @@ class MetroenergiesCard extends HTMLElement {
           ${this._config.title ? `<div class="me-card-title">${this._config.title}</div>` : ""}
           <div class="me-header">
             <div class="me-periods"></div>
+            <div class="me-mode-group">
+              <button class="me-period-btn me-mode-btn" data-mode="rolling">Glissant</button>
+              <button class="me-period-btn me-mode-btn" data-mode="range">Plage</button>
+            </div>
+          </div>
+          <div class="me-subheader">
             <div class="me-count-group">
               <span class="me-count-label"></span>
               <input class="me-count-input" type="number" min="1" max="3650" />
+            </div>
+            <div class="me-range-group">
+              <input class="me-range-input me-range-start" type="date" />
+              <span class="me-range-sep">→</span>
+              <input class="me-range-input me-range-end" type="date" />
             </div>
           </div>
           <div class="me-chart-wrap">
@@ -233,8 +273,13 @@ class MetroenergiesCard extends HTMLElement {
     `;
     this._els = {
       periods: this.querySelector(".me-periods"),
+      modeGroup: this.querySelector(".me-mode-group"),
+      countGroup: this.querySelector(".me-count-group"),
       countLabel: this.querySelector(".me-count-label"),
       countInput: this.querySelector(".me-count-input"),
+      rangeGroup: this.querySelector(".me-range-group"),
+      rangeStart: this.querySelector(".me-range-start"),
+      rangeEnd: this.querySelector(".me-range-end"),
       chart: this.querySelector(".me-chart"),
       tooltip: this.querySelector(".me-tooltip"),
       chartWrap: this.querySelector(".me-chart-wrap"),
@@ -253,11 +298,28 @@ class MetroenergiesCard extends HTMLElement {
         });
         this._els.periods.appendChild(btn);
       }
+      for (const btn of this._els.modeGroup.querySelectorAll(".me-mode-btn")) {
+        btn.addEventListener("click", () => {
+          this._mode = btn.dataset.mode;
+          this._render();
+        });
+      }
+    } else {
+      this._els.modeGroup.remove();
     }
 
     this._els.countInput.addEventListener("change", () => {
       const value = Math.max(1, Math.min(3650, Math.round(Number(this._els.countInput.value) || 1)));
       this._counts[this._period] = value;
+      this._render();
+    });
+
+    this._els.rangeStart.addEventListener("change", () => {
+      this._range.start = this._els.rangeStart.value || this._range.start;
+      this._render();
+    });
+    this._els.rangeEnd.addEventListener("change", () => {
+      this._range.end = this._els.rangeEnd.value || this._range.end;
       this._render();
     });
   }
@@ -281,15 +343,32 @@ class MetroenergiesCard extends HTMLElement {
     for (const btn of periods.querySelectorAll(".me-period-btn")) {
       btn.classList.toggle("active", btn.dataset.period === this._period);
     }
+    if (this._config.show_period_selector) {
+      for (const btn of this._els.modeGroup.querySelectorAll(".me-mode-btn")) {
+        btn.classList.toggle("active", btn.dataset.mode === this._mode);
+      }
+    }
+
+    const rangeMode = this._mode === "range";
+    this._els.countGroup.style.display = rangeMode ? "none" : "flex";
+    this._els.rangeGroup.style.display = rangeMode ? "flex" : "none";
 
     this._els.countLabel.textContent = PERIODS[this._period].unitLabel;
     if (document.activeElement !== this._els.countInput) {
       this._els.countInput.value = this._counts[this._period];
     }
+    if (document.activeElement !== this._els.rangeStart) {
+      this._els.rangeStart.value = this._range.start;
+    }
+    if (document.activeElement !== this._els.rangeEnd) {
+      this._els.rangeEnd.value = this._range.end;
+    }
 
     const history = stateObj.attributes.history || [];
     const periodDef = PERIODS[this._period];
-    const data = periodDef.aggregate(history, this._periodCount(this._period));
+    const data = rangeMode
+      ? periodDef.aggregate(filterByRange(history, this._range.start, this._range.end))
+      : periodDef.aggregate(history, this._periodCount(this._period));
 
     if (data.length === 0) {
       chart.innerHTML = `<div class="me-empty">Pas encore de données</div>`;

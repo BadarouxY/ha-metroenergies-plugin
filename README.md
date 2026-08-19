@@ -90,9 +90,16 @@ ne pas déformer le graphique selon la vue (jour/mois/année) affichée.
 - Les boutons **Jour / Mois / Année** dans l'en-tête permettent de changer
   de granularité sans toucher à la config (les vues mois/année agrègent
   l'historique quotidien par somme).
-- Le champ numérique à côté des boutons permet de taper directement le
-  nombre de jours/mois/années affichés, sans éditer le YAML (`days`,
-  `months`, `years` ne servent alors que de valeurs de départ).
+- Les boutons **Glissant / Plage** choisissent comment cette granularité
+  est bornée dans le temps :
+  - **Glissant** (par défaut) : les N derniers jours/mois/années en
+    partant d'aujourd'hui. Le champ numérique à côté permet de taper
+    directement ce nombre, sans éditer le YAML (`days`, `months`, `years`
+    ne servent alors que de valeurs de départ).
+  - **Plage** : deux sélecteurs de date (début/fin) fixent un intervalle
+    exact (ex. "l'hiver dernier"), affiché avec la granularité Jour/Mois/
+    Année choisie — toutes les barres de l'intervalle sont affichées, pas
+    seulement les N dernières.
 - Survoler une barre affiche une infobulle avec la date/période et la
   valeur exacte, et la met en surbrillance.
 - Le total de toutes les valeurs affichées (somme des barres visibles à
