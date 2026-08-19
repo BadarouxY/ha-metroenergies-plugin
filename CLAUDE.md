@@ -77,9 +77,13 @@ custom_components/metroenergies_unofficial/
 
 ## Conventions du projet
 
-- Pas de tests automatisés, pas de CI de build (juste `.github/`, à
-  vérifier si besoin). Vérifier manuellement dans une instance HA si un
-  changement touche le config flow, le coordinator ou la carte.
+- Pas de tests automatisés, pas de CI (le repo a eu un lint ruff +
+  validation HACS/hassfest dans `.github/workflows/` à un moment, mais
+  supprimés délibérément — projet perso mono-utilisateur, le check
+  "topics" de HACS n'a de sens qu'en vue d'une publication sur le store
+  HACS par défaut, pas pour un usage personnel via custom repository).
+  Vérifier manuellement dans une instance HA si un changement touche le
+  config flow, le coordinator ou la carte.
 - `custom:metroenergies-card` est en JS vanilla, pas de framework/build
   step — éditer directement `www/metroenergies-card.js`.
 - Bumper `version` dans `manifest.json` à chaque changement notable,
