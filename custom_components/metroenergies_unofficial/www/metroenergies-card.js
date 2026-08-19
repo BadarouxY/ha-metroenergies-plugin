@@ -34,6 +34,11 @@ function filterByRange(history, start, end) {
   return history.filter((entry) => (!start || entry.date >= start) && (!end || entry.date <= end));
 }
 
+function average(values) {
+  if (!values || values.length === 0) return null;
+  return values.reduce((sum, v) => sum + v, 0) / values.length;
+}
+
 // count is only used in rolling-window mode (last N buckets); range mode
 // pre-filters history to the chosen bounds and keeps every bucket in it.
 function aggregateByDay(history, count = Infinity) {
@@ -44,16 +49,22 @@ function aggregateByDay(history, count = Infinity) {
       key: entry.date,
       label: `${d}/${m}`,
       value: entry.conso,
+      temp: entry.temp ?? null,
     };
   });
 }
 
 function aggregateByMonth(history, count = Infinity) {
   const totals = new Map();
+  const temps = new Map();
   for (const entry of history) {
     const { y, m } = parseDate(entry.date);
     const key = `${y}-${String(m).padStart(2, "0")}`;
     totals.set(key, (totals.get(key) || 0) + entry.conso);
+    if (entry.temp !== null && entry.temp !== undefined) {
+      if (!temps.has(key)) temps.set(key, []);
+      temps.get(key).push(entry.temp);
+    }
   }
   const sortedKeys = [...totals.keys()].sort();
   const keys = Number.isFinite(count) ? sortedKeys.slice(-count) : sortedKeys;
@@ -63,15 +74,21 @@ function aggregateByMonth(history, count = Infinity) {
       key,
       label: `${MONTHS_FR[m - 1]} ${y}`,
       value: totals.get(key),
+      temp: average(temps.get(key)),
     };
   });
 }
 
 function aggregateByYear(history, count = Infinity) {
   const totals = new Map();
+  const temps = new Map();
   for (const entry of history) {
     const { y } = parseDate(entry.date);
     totals.set(y, (totals.get(y) || 0) + entry.conso);
+    if (entry.temp !== null && entry.temp !== undefined) {
+      if (!temps.has(y)) temps.set(y, []);
+      temps.get(y).push(entry.temp);
+    }
   }
   const sortedKeys = [...totals.keys()].sort();
   const keys = Number.isFinite(count) ? sortedKeys.slice(-count) : sortedKeys;
@@ -79,6 +96,7 @@ function aggregateByYear(history, count = Infinity) {
     key: String(y),
     label: String(y),
     value: totals.get(y),
+    temp: average(temps.get(y)),
   }));
 }
 
@@ -103,6 +121,8 @@ class MetroenergiesCard extends HTMLElement {
       // configs keep working, but expose it as its own toggle so the
       // visual editor has an unambiguous way to reset to the theme color.
       custom_color: Boolean(config.color),
+      temp_color: null,
+      custom_temp_color: Boolean(config.temp_color),
       default_period: "day",
       days: PERIODS.day.defaultCount,
       months: PERIODS.month.defaultCount,
@@ -110,6 +130,7 @@ class MetroenergiesCard extends HTMLElement {
       show_period_selector: true,
       default_mode: "rolling",
       show_mode_selector: true,
+      show_temperature: true,
       ...config,
     };
     this._period = this._config.default_period in PERIODS ? this._config.default_period : "day";
@@ -152,6 +173,9 @@ class MetroenergiesCard extends HTMLElement {
       years: "Années affichées par défaut",
       default_mode: "Mode par défaut",
       show_mode_selector: "Afficher le sélecteur Glissant/Plage",
+      show_temperature: "Afficher la courbe de température",
+      custom_temp_color: "Couleur personnalisée (courbe)",
+      temp_color: "Couleur de la courbe",
     };
     const HELPERS = {
       entity: "Entité exposant l'attribut history (ex. sensor.metroenergies_unofficial_consommation).",
@@ -163,6 +187,9 @@ class MetroenergiesCard extends HTMLElement {
       months: "Valeur de départ, modifiable ensuite directement dans la carte.",
       years: "Valeur de départ, modifiable ensuite directement dans la carte.",
       show_mode_selector: "Si désactivé, masque aussi les champs nombre de jours / plage de dates : la carte reste figée sur le mode et les valeurs par défaut.",
+      show_temperature: "Température extérieure moyenne à Grenoble, en surimpression avec sa propre échelle (°C) à droite. Absente si l'entité n'a pas encore de données de température.",
+      custom_temp_color: "Décoché, la courbe utilise l'orange par défaut.",
+      temp_color: "Utilisée seulement si « Couleur personnalisée (courbe) » est coché.",
     };
 
     return {
@@ -202,6 +229,15 @@ class MetroenergiesCard extends HTMLElement {
           type: "grid",
           name: "",
           schema: [
+            { name: "show_temperature", selector: { boolean: {} } },
+            { name: "custom_temp_color", selector: { boolean: {} } },
+          ],
+        },
+        { name: "temp_color", selector: { text: { type: "color" } } },
+        {
+          type: "grid",
+          name: "",
+          schema: [
             { name: "days", selector: { number: { min: 1, max: 3650, mode: "box" } } },
             { name: "months", selector: { number: { min: 1, max: 600, mode: "box" } } },
             { name: "years", selector: { number: { min: 1, max: 100, mode: "box" } } },
@@ -236,6 +272,17 @@ class MetroenergiesCard extends HTMLElement {
     return this._counts[period];
   }
 
+  _contentStyle() {
+    const vars = [];
+    if (this._config.custom_color && this._config.color) {
+      vars.push(`--me-bar-color:${this._config.color};`);
+    }
+    if (this._config.custom_temp_color && this._config.temp_color) {
+      vars.push(`--me-temp-color:${this._config.temp_color};`);
+    }
+    return vars.join("");
+  }
+
   _buildSkeleton() {
     this.innerHTML = `
       <ha-card>
@@ -265,6 +312,9 @@ class MetroenergiesCard extends HTMLElement {
           .me-bar:hover { opacity: 0.85; }
           .me-axis-line { stroke: var(--divider-color); stroke-width: 1; }
           .me-axis-label { fill: var(--secondary-text-color); font-size: 12px; }
+          .me-axis-label-temp { fill: var(--me-temp-color, #ff9800); }
+          .me-temp-line { stroke: var(--me-temp-color, #ff9800); stroke-width: 2; fill: none; }
+          .me-temp-dot { fill: var(--me-temp-color, #ff9800); }
           .me-total { margin-top: 10px; text-align: right; font-size: 0.85em; color: var(--secondary-text-color); }
           .me-total strong { color: var(--primary-text-color); font-weight: 600; }
           .me-tooltip {
@@ -276,7 +326,7 @@ class MetroenergiesCard extends HTMLElement {
           }
           .me-empty { color: var(--secondary-text-color); padding: 24px 0; text-align: center; }
         </style>
-        <div class="me-content" style="${this._config.custom_color && this._config.color ? `--me-bar-color:${this._config.color};` : ""}">
+        <div class="me-content" style="${this._contentStyle()}">
           ${this._config.title ? `<div class="me-card-title">${this._config.title}</div>` : ""}
           <div class="me-header">
             <div class="me-periods"></div>
@@ -426,7 +476,10 @@ class MetroenergiesCard extends HTMLElement {
     const width = 600;
     const height = 230;
     const padLeft = 52;
-    const padRight = 8;
+    const temps = data.map((d) => d.temp).filter((t) => t !== null && t !== undefined);
+    const hasTemp = this._config.show_temperature && temps.length > 0;
+    // Wider right margin only when needed, to fit the °C axis labels.
+    const padRight = hasTemp ? 38 : 8;
     const padTop = 14;
     const padBottom = 34;
     const plotWidth = width - padLeft - padRight;
@@ -440,10 +493,24 @@ class MetroenergiesCard extends HTMLElement {
     const yMin = 0;
     const range = yMax - yMin || 1;
 
+    // The temperature scale is independent from the consumption one: both
+    // just share the same 5 horizontal gridlines, each line meaning a
+    // different value on the left vs. the right axis.
+    let tempMin = 0;
+    let tempRange = 1;
+    if (hasTemp) {
+      const rawMin = Math.min(...temps);
+      const rawMax = Math.max(...temps);
+      const pad = (rawMax - rawMin) * 0.15 || 1;
+      tempMin = rawMin - pad;
+      tempRange = rawMax + pad - tempMin || 1;
+    }
+
     const barSlot = plotWidth / data.length;
     const barWidth = Math.max(barSlot - 2, 1);
 
     const yToPixel = (value) => padTop + plotHeight - ((value - yMin) / range) * plotHeight;
+    const tempToPixel = (value) => padTop + plotHeight - ((value - tempMin) / tempRange) * plotHeight;
 
     // Horizontal gridlines + labels (0%, 25%, 50%, 75%, 100%)
     let gridSvg = "";
@@ -452,6 +519,10 @@ class MetroenergiesCard extends HTMLElement {
       const y = yToPixel(value);
       gridSvg += `<line class="me-axis-line" x1="${padLeft}" y1="${y}" x2="${width - padRight}" y2="${y}" />`;
       gridSvg += `<text class="me-axis-label" x="${padLeft - 6}" y="${y + 3}" text-anchor="end">${formatNumber(value)}</text>`;
+      if (hasTemp) {
+        const tempValue = tempMin + (tempRange * i) / 4;
+        gridSvg += `<text class="me-axis-label me-axis-label-temp" x="${width - padRight + 6}" y="${y + 3}" text-anchor="start">${formatNumber(tempValue)}°</text>`;
+      }
     }
 
     // Bars
@@ -462,6 +533,26 @@ class MetroenergiesCard extends HTMLElement {
       const barHeight = padTop + plotHeight - y;
       barsSvg += `<rect class="me-bar" data-index="${index}" x="${x}" y="${y}" width="${barWidth}" height="${Math.max(barHeight, 0)}" rx="2" />`;
     });
+
+    // Temperature line: only points where temp is known, connected as one
+    // polyline (any gap from missing data is simply bridged with a straight
+    // segment rather than broken up).
+    let tempSvg = "";
+    if (hasTemp) {
+      const points = data
+        .map((entry, index) => {
+          if (entry.temp === null || entry.temp === undefined) return null;
+          const x = padLeft + index * barSlot + barSlot / 2;
+          return `${x},${tempToPixel(entry.temp)}`;
+        })
+        .filter(Boolean);
+      if (points.length > 1) {
+        tempSvg = `<polyline class="me-temp-line" points="${points.join(" ")}" />`;
+      } else if (points.length === 1) {
+        const [x, y] = points[0].split(",");
+        tempSvg = `<circle class="me-temp-dot" cx="${x}" cy="${y}" r="2.5" />`;
+      }
+    }
 
     // X-axis labels, thinned to avoid overlap
     const maxLabels = 10;
@@ -477,6 +568,7 @@ class MetroenergiesCard extends HTMLElement {
       <svg viewBox="0 0 ${width} ${height}" style="width:100%; height:auto; display:block;" data-slot="${barSlot}" data-padleft="${padLeft}">
         ${gridSvg}
         ${barsSvg}
+        ${tempSvg}
         ${labelsSvg}
       </svg>
     `;
@@ -491,7 +583,9 @@ class MetroenergiesCard extends HTMLElement {
       bar.addEventListener("mouseenter", (event) => {
         const index = Number(event.target.dataset.index);
         const entry = data[index];
-        tooltip.textContent = `${entry.label} : ${formatNumber(entry.value)} ${this._config.unit}`;
+        const tempPart =
+          entry.temp !== null && entry.temp !== undefined ? ` (${formatNumber(entry.temp)}°C)` : "";
+        tooltip.textContent = `${entry.label} : ${formatNumber(entry.value)} ${this._config.unit}${tempPart}`;
         tooltip.style.display = "block";
       });
       bar.addEventListener("mousemove", (event) => {

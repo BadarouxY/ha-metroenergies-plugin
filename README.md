@@ -88,6 +88,9 @@ Options disponibles :
 | `show_period_selector` | `true` | Affiche les boutons Jour/Mois/Année. |
 | `default_mode` | `rolling` | Mode initial : `rolling` (glissant) ou `range` (plage de dates). |
 | `show_mode_selector` | `true` | Affiche les boutons Glissant/Plage et les champs associés (nombre de jours/mois/années, ou dates de début/fin). Si `false`, la carte reste figée sur `default_mode` et les valeurs par défaut (`days`/`months`/`years`), sans aucun contrôle affiché. |
+| `show_temperature` | `true` | Affiche la température extérieure moyenne (Grenoble) en courbe par-dessus les barres, avec sa propre échelle en °C à droite. N'apparaît que si l'attribut `temp` est présent sur au moins une entrée de `history` ; en vue mois/année, c'est la moyenne des `temp` journaliers du mois/de l'année. |
+| `custom_temp_color` | *(déduit de `temp_color`)* | Même mécanisme que `custom_color`, pour la courbe de température : décoché, la courbe utilise l'orange par défaut. |
+| `temp_color` | orange (`#ff9800`) | Couleur de la courbe, utilisée seulement si `custom_temp_color` est actif. |
 
 L'axe Y n'est pas configurable : son maximum est toujours recalculé
 automatiquement (+15% au-dessus du maximum affiché) plutôt que fixé, pour
