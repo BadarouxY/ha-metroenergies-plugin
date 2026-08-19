@@ -15,13 +15,17 @@ custom_components/metroenergies_unofficial/
   __init__.py       setup de l'entry : enregistre la carte Lovelace, crée le
                      coordinator, planifie le refresh quotidien
   api.py             MetroenergiesApiClient : login + fetch export sur
-                     metroenergies.fr
+                     metroenergies.fr, puis enrichissement température
+                     (Open-Meteo, voir pièges ci-dessous)
   coordinator.py     DataUpdateCoordinator, pas de polling à intervalle —
                      update_interval=None, refresh déclenché depuis __init__.py
   config_flow.py     Config Flow (login/password) + reauth + reconfigure
-  const.py           DOMAIN, clés de config, heure du refresh quotidien
+  const.py           DOMAIN, clés de config, heure du refresh quotidien,
+                     coordonnées Grenoble pour la météo
   sensor.py          sensor.metroenergies_unofficial_consommation (attribut
-                     `history` = liste de {date, conso})
+                     `history` = liste de {date, conso, temp?} — `temp` est
+                     absent si Open-Meteo n'a pas encore de donnée pour ce
+                     jour, voir pièges)
   www/metroenergies-card.js   carte Lovelace custom (vanilla JS, pas de build)
 ```
 
@@ -56,6 +60,20 @@ custom_components/metroenergies_unofficial/
   automatiquement le flow de reauth de HA (voir `coordinator.py` et
   `config_flow.async_step_reauth`). Un flow "Reconfigurer" existe aussi
   pour changer les identifiants manuellement à tout moment.
+- **Température Open-Meteo best-effort, pas via une entité séparée** :
+  `_async_get_temperatures` dans `api.py` interroge
+  `archive-api.open-meteo.com` (gratuit, sans clé) et fusionne un champ
+  `temp` dans les entrées `history` existantes plutôt que de créer une
+  nouvelle entité. Toute erreur (réseau, statut HTTP) y est loggée et
+  avalée — ne doit jamais lever `MetroenergiesApiError`/`UpdateFailed` ni
+  rendre le capteur de conso indisponible, car c'est un enrichissement
+  optionnel, pas la donnée cœur de l'intégration. L'archive Open-Meteo a
+  aussi quelques jours de retard (ERA5) : les tout derniers jours de
+  `history` peuvent temporairement ne pas avoir de `temp`, ça se remplit
+  tout seul au refresh suivant. Coordonnées Grenoble en dur dans
+  `const.py` (`WEATHER_LATITUDE`/`LONGITUDE`) — voulu, Metroenergies étant
+  le réseau de chaleur de la métropole grenobloise, tous ses usagers sont
+  dans la même zone géographique.
 
 ## Conventions du projet
 

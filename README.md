@@ -20,7 +20,10 @@ etc.) pour les afficher sous forme de graphique dans Home Assistant.
   [Fréquence de mise à jour](#fréquence-de-mise-à-jour).
 - Un capteur `sensor.metroenergies_unofficial_consommation` exposant la
   consommation du dernier jour, avec l'historique complet en attribut
-  (`history`, liste de `{date, conso}`).
+  (`history`, liste de `{date, conso, temp}`). `temp` est la température
+  extérieure moyenne du jour à Grenoble (source : [Open-Meteo](https://open-meteo.com/),
+  gratuit et sans clé) ; elle peut être absente pour les tout derniers
+  jours, le temps que leur historique météo se stabilise.
 - Une carte Lovelace dédiée (`custom:metroenergies-card`), fournie et
   enregistrée automatiquement par l'intégration : sélecteur de période
   (jour/mois/année), plage configurable, échelle Y configurable, tooltip

@@ -12,10 +12,13 @@ from datetime import datetime, timezone
 import aiohttp
 from homeassistant.util import dt as dt_util
 
+from .const import WEATHER_LATITUDE, WEATHER_LONGITUDE
+
 _LOGGER = logging.getLogger(__name__)
 
 LOGIN_URL = "https://www.metroenergies.fr/S2G-MT-Usager-Back/rest/mt/usager/account/login"
 EXPORT_URL = "https://www.metroenergies.fr/S2G-MT-Usager-Back/rest/mt/usager/conso/exporter"
+WEATHER_URL = "https://archive-api.open-meteo.com/v1/archive"
 
 REQUEST_TIMEOUT = aiohttp.ClientTimeout(total=30)
 
@@ -81,6 +84,53 @@ class MetroenergiesApiClient:
         """Validate the configured credentials (used by the config flow)."""
         await self._async_login()
 
+    async def _async_get_temperatures(
+        self, start_date: str, end_date: str
+    ) -> dict[str, float]:
+        """Fetch daily mean outdoor temperature for Grenoble from Open-Meteo.
+
+        start_date/end_date are the first and last dates actually present
+        in the consumption history (as "YYYY-MM-DD" strings), not a fixed
+        window: there is no point asking Open-Meteo for temperatures on
+        days metroenergies.fr has no consumption for (either before the
+        contract started, or the last day or two if it hasn't finished
+        aggregating yet) since async_get_data only ever looks up a date
+        that's already a history entry - anything else is wasted payload.
+
+        Best-effort enrichment, not the integration's core data: Open-Meteo
+        is a separate free/keyless service from metroenergies.fr itself, so
+        any failure here is logged and swallowed rather than failing the
+        whole update (and with it the consumption sensor) over a weather
+        API hiccup. Its ERA5-based archive also lags a few days behind
+        today, so the most recent entries may briefly have no temperature
+        until a later daily refresh picks it up.
+        """
+        params = {
+            "latitude": WEATHER_LATITUDE,
+            "longitude": WEATHER_LONGITUDE,
+            "start_date": start_date,
+            "end_date": end_date,
+            "daily": "temperature_2m_mean",
+            "timezone": "Europe/Paris",
+        }
+        try:
+            resp = await self._session.get(
+                WEATHER_URL, params=params, timeout=REQUEST_TIMEOUT
+            )
+            if resp.status != 200:
+                raise MetroenergiesApiError(
+                    f"Weather fetch failed with status {resp.status}"
+                )
+            raw = await resp.json(content_type=None)
+        except (aiohttp.ClientError, MetroenergiesApiError) as err:
+            _LOGGER.warning("Could not fetch outdoor temperature: %s", err)
+            return {}
+
+        daily = raw.get("daily", {})
+        dates = daily.get("time", [])
+        temps = daily.get("temperature_2m_mean", [])
+        return {date: temp for date, temp in zip(dates, temps) if temp is not None}
+
     async def async_get_data(self) -> dict:
         """Fetch and normalize consumption history from metroenergies.fr."""
         token = await self._async_login()
@@ -126,6 +176,15 @@ class MetroenergiesApiClient:
                 dt_util.utc_from_timestamp(entry["date"] / 1000)
             ).strftime("%Y-%m-%d")
             history.append({"date": entry_date, "conso": conso})
+
+        if history:
+            temperatures = await self._async_get_temperatures(
+                history[0]["date"], history[-1]["date"]
+            )
+            for entry in history:
+                temp = temperatures.get(entry["date"])
+                if temp is not None:
+                    entry["temp"] = round(temp, 1)
 
         return {
             "latest": history[-1]["conso"] if history else None,

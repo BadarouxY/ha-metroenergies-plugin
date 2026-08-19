@@ -9,3 +9,9 @@ CONF_PASSWORD = "password"
 # fetch once a day, shortly before midnight, rather than polling repeatedly.
 DAILY_REFRESH_HOUR = 21
 DAILY_REFRESH_MINUTE = 30
+
+# Metroenergies is the Grenoble metropolitan heat network, so every account
+# is in the Grenoble area regardless of the individual user - no need for a
+# per-user location setting for outdoor temperature.
+WEATHER_LATITUDE = 45.19
+WEATHER_LONGITUDE = 5.72
