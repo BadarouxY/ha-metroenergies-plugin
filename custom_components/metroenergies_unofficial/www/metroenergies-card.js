@@ -97,6 +97,12 @@ class MetroenergiesCard extends HTMLElement {
       unit: "kWh",
       title: null,
       color: null,
+      // A native color input can never be "empty" once touched, so a plain
+      // color field alone gives no way back to the theme default. Default
+      // this from whether `color` was already set, so existing YAML
+      // configs keep working, but expose it as its own toggle so the
+      // visual editor has an unambiguous way to reset to the theme color.
+      custom_color: Boolean(config.color),
       default_period: "day",
       days: PERIODS.day.defaultCount,
       months: PERIODS.month.defaultCount,
@@ -137,6 +143,7 @@ class MetroenergiesCard extends HTMLElement {
       entity: "Entité",
       title: "Titre",
       unit: "Unité",
+      custom_color: "Couleur personnalisée",
       color: "Couleur",
       default_period: "Période par défaut",
       show_period_selector: "Afficher le sélecteur de période",
@@ -150,7 +157,8 @@ class MetroenergiesCard extends HTMLElement {
       entity: "Entité exposant l'attribut history (ex. sensor.metroenergies_unofficial_consommation).",
       title: "Affiché au-dessus du graphique. Laisser vide pour ne rien afficher.",
       unit: "Unité affichée dans les infobulles et le total.",
-      color: "Laisser vide pour utiliser la couleur du thème.",
+      custom_color: "Décoché, la carte utilise la couleur du thème Home Assistant, quelle que soit la couleur choisie ci-dessous.",
+      color: "Utilisée seulement si « Couleur personnalisée » est coché.",
       days: "Valeur de départ, modifiable ensuite directement dans la carte.",
       months: "Valeur de départ, modifiable ensuite directement dans la carte.",
       years: "Valeur de départ, modifiable ensuite directement dans la carte.",
@@ -166,9 +174,10 @@ class MetroenergiesCard extends HTMLElement {
           name: "",
           schema: [
             { name: "unit", selector: { text: {} } },
-            { name: "color", selector: { text: { type: "color" } } },
+            { name: "custom_color", selector: { boolean: {} } },
           ],
         },
+        { name: "color", selector: { text: { type: "color" } } },
         {
           type: "grid",
           name: "",
@@ -267,7 +276,7 @@ class MetroenergiesCard extends HTMLElement {
           }
           .me-empty { color: var(--secondary-text-color); padding: 24px 0; text-align: center; }
         </style>
-        <div class="me-content" style="${this._config.color ? `--me-bar-color:${this._config.color};` : ""}">
+        <div class="me-content" style="${this._config.custom_color && this._config.color ? `--me-bar-color:${this._config.color};` : ""}">
           ${this._config.title ? `<div class="me-card-title">${this._config.title}</div>` : ""}
           <div class="me-header">
             <div class="me-periods"></div>

@@ -76,7 +76,8 @@ Options disponibles :
 | `entity` | *(requis)* | Entité du capteur exposant l'attribut `history`. |
 | `unit` | `kWh` | Unité affichée dans les infobulles. |
 | `title` | *(absent)* | Titre au-dessus du graphique. Rien n'est affiché si non renseigné. |
-| `color` | `var(--primary-color)` | Couleur des barres. Réglable via le color picker de l'éditeur visuel, ou en YAML avec n'importe quelle valeur CSS (`#e67e22`, variable de thème HA...). |
+| `custom_color` | *(déduit de `color`)* | Active la couleur ci-dessous. Décoché (ou en YAML sans `color` défini), la carte utilise la couleur du thème HA — un `<input type="color">` ne peut jamais être "vide" une fois touché, donc c'est cette case, pas le champ couleur, qui permet de revenir à la couleur par défaut depuis l'éditeur visuel. |
+| `color` | `var(--primary-color)` | Couleur des barres, utilisée seulement si `custom_color` est actif. Réglable via le color picker de l'éditeur visuel, ou en YAML avec n'importe quelle valeur CSS (`#e67e22`, variable de thème HA...). |
 | `default_period` | `day` | Période initiale : `day`, `month` ou `year`. |
 | `days` | `30` | Valeur de départ du nombre de jours en vue "jour" (modifiable ensuite dans la carte, voir plus bas). |
 | `months` | `12` | Valeur de départ du nombre de mois en vue "mois". |
