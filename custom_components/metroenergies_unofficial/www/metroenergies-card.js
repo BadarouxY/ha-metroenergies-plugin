@@ -120,6 +120,7 @@ class MetroenergiesCard extends HTMLElement {
       entity: "Entité exposant l'attribut history (ex. sensor.metroenergies_unofficial_consommation).",
       title: "Affiché au-dessus du graphique. Laisser vide pour ne rien afficher.",
       unit: "Unité affichée dans les infobulles et le total.",
+      color: "Laisser vide pour utiliser la couleur du thème.",
       days: "Valeur de départ, modifiable ensuite directement dans la carte.",
       months: "Valeur de départ, modifiable ensuite directement dans la carte.",
       years: "Valeur de départ, modifiable ensuite directement dans la carte.",
@@ -134,7 +135,7 @@ class MetroenergiesCard extends HTMLElement {
           name: "",
           schema: [
             { name: "unit", selector: { text: {} } },
-            { name: "color", selector: { color_rgb: {} } },
+            { name: "color", selector: { text: { type: "color" } } },
           ],
         },
         {
@@ -176,12 +177,6 @@ class MetroenergiesCard extends HTMLElement {
     return this._counts[period];
   }
 
-  _colorToCss(color) {
-    // The color_rgb selector (visual color picker) yields an [r, g, b]
-    // array; YAML-configured colors (hex, var(--...)) stay plain strings.
-    return Array.isArray(color) ? `rgb(${color.join(",")})` : color;
-  }
-
   _buildSkeleton() {
     this.innerHTML = `
       <ha-card>
@@ -219,7 +214,7 @@ class MetroenergiesCard extends HTMLElement {
           }
           .me-empty { color: var(--secondary-text-color); padding: 24px 0; text-align: center; }
         </style>
-        <div class="me-content" style="${this._config.color ? `--me-bar-color:${this._colorToCss(this._config.color)};` : ""}">
+        <div class="me-content" style="${this._config.color ? `--me-bar-color:${this._config.color};` : ""}">
           ${this._config.title ? `<div class="me-card-title">${this._config.title}</div>` : ""}
           <div class="me-header">
             <div class="me-periods"></div>
