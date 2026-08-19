@@ -66,6 +66,9 @@ type: custom:metroenergies-card
 entity: sensor.metroenergies_unofficial_consommation
 ```
 
+Toutes les options ci-dessous sont aussi réglables sans YAML, via l'éditeur
+visuel (bouton "Modifier" sur la carte dans l'éditeur de tableau de bord).
+
 Options disponibles :
 
 | Option | Défaut | Description |

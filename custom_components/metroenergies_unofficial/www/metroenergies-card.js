@@ -104,6 +104,94 @@ class MetroenergiesCard extends HTMLElement {
     return { entity: "sensor.metroenergies_unofficial_consommation" };
   }
 
+  static getConfigForm() {
+    const LABELS = {
+      entity: "Entité",
+      title: "Titre",
+      unit: "Unité",
+      color: "Couleur",
+      default_period: "Période par défaut",
+      show_period_selector: "Afficher le sélecteur de période",
+      days: "Jours affichés par défaut",
+      months: "Mois affichés par défaut",
+      years: "Années affichées par défaut",
+      y_min: "Minimum de l'axe Y",
+      y_max: "Maximum de l'axe Y",
+    };
+    const HELPERS = {
+      entity: "Entité exposant l'attribut history (ex. sensor.metroenergies_unofficial_consommation).",
+      title: "Affiché au-dessus du graphique. Laisser vide pour ne rien afficher.",
+      unit: "Unité affichée dans les infobulles et le total.",
+      color: "Couleur CSS des barres (ex. #e67e22 ou var(--primary-color)).",
+      days: "Valeur de départ, modifiable ensuite directement dans la carte.",
+      months: "Valeur de départ, modifiable ensuite directement dans la carte.",
+      years: "Valeur de départ, modifiable ensuite directement dans la carte.",
+      y_min: "Laisser vide pour 0.",
+      y_max: "Laisser vide pour un calcul automatique (+15% au-dessus du maximum affiché).",
+    };
+
+    return {
+      schema: [
+        { name: "entity", required: true, selector: { entity: { domain: "sensor" } } },
+        { name: "title", selector: { text: {} } },
+        {
+          type: "grid",
+          name: "",
+          schema: [
+            { name: "unit", selector: { text: {} } },
+            { name: "color", selector: { text: {} } },
+          ],
+        },
+        {
+          type: "grid",
+          name: "",
+          schema: [
+            {
+              name: "default_period",
+              selector: {
+                select: {
+                  mode: "dropdown",
+                  options: [
+                    { value: "day", label: "Jour" },
+                    { value: "month", label: "Mois" },
+                    { value: "year", label: "Année" },
+                  ],
+                },
+              },
+            },
+            { name: "show_period_selector", selector: { boolean: {} } },
+          ],
+        },
+        {
+          type: "grid",
+          name: "",
+          schema: [
+            { name: "days", selector: { number: { min: 1, max: 3650, mode: "box" } } },
+            { name: "months", selector: { number: { min: 1, max: 600, mode: "box" } } },
+            { name: "years", selector: { number: { min: 1, max: 100, mode: "box" } } },
+          ],
+        },
+        {
+          type: "expandable",
+          name: "",
+          title: "Axe Y (avancé)",
+          schema: [
+            {
+              type: "grid",
+              name: "",
+              schema: [
+                { name: "y_min", selector: { number: { mode: "box" } } },
+                { name: "y_max", selector: { number: { mode: "box" } } },
+              ],
+            },
+          ],
+        },
+      ],
+      computeLabel: (schema) => LABELS[schema.name],
+      computeHelper: (schema) => HELPERS[schema.name],
+    };
+  }
+
   _periodCount(period) {
     return this._counts[period];
   }
