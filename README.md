@@ -76,14 +76,16 @@ Options disponibles :
 | `entity` | *(requis)* | Entité du capteur exposant l'attribut `history`. |
 | `unit` | `kWh` | Unité affichée dans les infobulles. |
 | `title` | *(absent)* | Titre au-dessus du graphique. Rien n'est affiché si non renseigné. |
-| `color` | `var(--primary-color)` | Couleur des barres (valeur CSS ou variable de thème HA). |
+| `color` | `var(--primary-color)` | Couleur des barres. Réglable via le color picker de l'éditeur visuel (stockée alors en `[r, g, b]`), ou en YAML avec n'importe quelle valeur CSS (`#e67e22`, variable de thème HA...). |
 | `default_period` | `day` | Période initiale : `day`, `month` ou `year`. |
 | `days` | `30` | Valeur de départ du nombre de jours en vue "jour" (modifiable ensuite dans la carte, voir plus bas). |
 | `months` | `12` | Valeur de départ du nombre de mois en vue "mois". |
 | `years` | `5` | Valeur de départ du nombre d'années en vue "année". |
-| `y_min` | `0` | Valeur minimale fixe de l'axe Y. |
-| `y_max` | *(absent)* | Valeur maximale fixe de l'axe Y. Si absent, calculée automatiquement à partir du maximum affiché (+15% de marge). |
 | `show_period_selector` | `true` | Affiche les boutons Jour/Mois/Année. |
+
+L'axe Y n'est pas configurable : son maximum est toujours recalculé
+automatiquement (+15% au-dessus du maximum affiché) plutôt que fixé, pour
+ne pas déformer le graphique selon la vue (jour/mois/année) affichée.
 
 - Les boutons **Jour / Mois / Année** dans l'en-tête permettent de changer
   de granularité sans toucher à la config (les vues mois/année agrègent

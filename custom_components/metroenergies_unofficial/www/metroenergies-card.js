@@ -115,19 +115,14 @@ class MetroenergiesCard extends HTMLElement {
       days: "Jours affichés par défaut",
       months: "Mois affichés par défaut",
       years: "Années affichées par défaut",
-      y_min: "Minimum de l'axe Y",
-      y_max: "Maximum de l'axe Y",
     };
     const HELPERS = {
       entity: "Entité exposant l'attribut history (ex. sensor.metroenergies_unofficial_consommation).",
       title: "Affiché au-dessus du graphique. Laisser vide pour ne rien afficher.",
       unit: "Unité affichée dans les infobulles et le total.",
-      color: "Couleur CSS des barres (ex. #e67e22 ou var(--primary-color)).",
       days: "Valeur de départ, modifiable ensuite directement dans la carte.",
       months: "Valeur de départ, modifiable ensuite directement dans la carte.",
       years: "Valeur de départ, modifiable ensuite directement dans la carte.",
-      y_min: "Laisser vide pour 0.",
-      y_max: "Laisser vide pour un calcul automatique (+15% au-dessus du maximum affiché).",
     };
 
     return {
@@ -139,7 +134,7 @@ class MetroenergiesCard extends HTMLElement {
           name: "",
           schema: [
             { name: "unit", selector: { text: {} } },
-            { name: "color", selector: { text: {} } },
+            { name: "color", selector: { color_rgb: {} } },
           ],
         },
         {
@@ -171,21 +166,6 @@ class MetroenergiesCard extends HTMLElement {
             { name: "years", selector: { number: { min: 1, max: 100, mode: "box" } } },
           ],
         },
-        {
-          type: "expandable",
-          name: "",
-          title: "Axe Y (avancé)",
-          schema: [
-            {
-              type: "grid",
-              name: "",
-              schema: [
-                { name: "y_min", selector: { number: { mode: "box" } } },
-                { name: "y_max", selector: { number: { mode: "box" } } },
-              ],
-            },
-          ],
-        },
       ],
       computeLabel: (schema) => LABELS[schema.name],
       computeHelper: (schema) => HELPERS[schema.name],
@@ -194,6 +174,12 @@ class MetroenergiesCard extends HTMLElement {
 
   _periodCount(period) {
     return this._counts[period];
+  }
+
+  _colorToCss(color) {
+    // The color_rgb selector (visual color picker) yields an [r, g, b]
+    // array; YAML-configured colors (hex, var(--...)) stay plain strings.
+    return Array.isArray(color) ? `rgb(${color.join(",")})` : color;
   }
 
   _buildSkeleton() {
@@ -233,7 +219,7 @@ class MetroenergiesCard extends HTMLElement {
           }
           .me-empty { color: var(--secondary-text-color); padding: 24px 0; text-align: center; }
         </style>
-        <div class="me-content" style="${this._config.color ? `--me-bar-color:${this._config.color};` : ""}">
+        <div class="me-content" style="${this._config.color ? `--me-bar-color:${this._colorToCss(this._config.color)};` : ""}">
           ${this._config.title ? `<div class="me-card-title">${this._config.title}</div>` : ""}
           <div class="me-header">
             <div class="me-periods"></div>
@@ -334,8 +320,11 @@ class MetroenergiesCard extends HTMLElement {
     const plotHeight = height - padTop - padBottom;
 
     const dataMax = Math.max(...data.map((d) => d.value), 0);
-    const yMax = this._config.y_max ?? (dataMax > 0 ? dataMax * 1.15 : 1);
-    const yMin = this._config.y_min ?? 0;
+    // Fixed here rather than user-configurable: a fixed axis scale would
+    // distort the chart whenever the period selector switches between
+    // day/month/year views, since their value ranges differ wildly.
+    const yMax = dataMax > 0 ? dataMax * 1.15 : 1;
+    const yMin = 0;
     const range = yMax - yMin || 1;
 
     const barSlot = plotWidth / data.length;
