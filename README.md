@@ -88,7 +88,7 @@ Options disponibles :
 | `show_period_selector` | `true` | Affiche les boutons Jour/Mois/Année. |
 | `default_mode` | `rolling` | Mode initial : `rolling` (glissant) ou `range` (plage de dates). |
 | `show_mode_selector` | `true` | Affiche les boutons Glissant/Plage et les champs associés (nombre de jours/mois/années, ou dates de début/fin). Si `false`, la carte reste figée sur `default_mode` et les valeurs par défaut (`days`/`months`/`years`), sans aucun contrôle affiché. |
-| `show_temperature` | `true` | Affiche la température extérieure moyenne (Grenoble) en courbe par-dessus les barres, avec sa propre échelle en °C à droite. N'apparaît que si l'attribut `temp` est présent sur au moins une entrée de `history` ; en vue mois/année, c'est la moyenne des `temp` journaliers du mois/de l'année. |
+| `show_temperature` | `true` | Active la courbe de température extérieure moyenne (Grenoble) par-dessus les barres, avec sa propre échelle en °C à droite. Un bouton 🌡 dans l'en-tête de la carte permet ensuite de l'afficher/la masquer à la volée, sans repasser par la config ; `show_temperature: false` la désactive complètement (le bouton n'apparaît même pas). N'a d'effet que si l'attribut `temp` est présent sur au moins une entrée de `history` ; en vue mois/année, c'est la moyenne des `temp` journaliers du mois/de l'année. |
 | `custom_temp_color` | *(déduit de `temp_color`)* | Même mécanisme que `custom_color`, pour la courbe de température : décoché, la courbe utilise l'orange par défaut. |
 | `temp_color` | orange (`#ff9800`) | Couleur de la courbe, utilisée seulement si `custom_temp_color` est actif. |
 
@@ -110,7 +110,8 @@ ne pas déformer le graphique selon la vue (jour/mois/année) affichée.
     Année choisie — toutes les barres de l'intervalle sont affichées, pas
     seulement les N dernières.
 - Survoler une barre affiche une infobulle avec la date/période et la
-  valeur exacte, et la met en surbrillance.
+  valeur exacte (et le jour de la semaine en vue Jour, ex. "Vendredi
+  12/08"), et la met en surbrillance.
 - Le total de toutes les valeurs affichées (somme des barres visibles à
   l'écran) s'affiche sous le graphique.
 - L'intégration récupère l'historique complet depuis une date de départ

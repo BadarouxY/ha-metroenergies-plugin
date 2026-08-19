@@ -9,13 +9,24 @@ const MONTHS_FR = [
   "juil.", "août", "sept.", "oct.", "nov.", "déc.",
 ];
 
+const WEEKDAYS_FR = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"];
+
 function parseDate(dateStr) {
   const [y, m, d] = dateStr.split("-").map(Number);
   return { y, m, d };
 }
 
+function weekdayOf(dateStr) {
+  const { y, m, d } = parseDate(dateStr);
+  return WEEKDAYS_FR[new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
+}
+
 function formatNumber(value) {
   return Math.round(value * 10) / 10;
+}
+
+function capitalize(str) {
+  return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
 function todayISO() {
@@ -50,6 +61,7 @@ function aggregateByDay(history, count = Infinity) {
       label: `${d}/${m}`,
       value: entry.conso,
       temp: entry.temp ?? null,
+      weekday: weekdayOf(entry.date),
     };
   });
 }
@@ -144,6 +156,11 @@ class MetroenergiesCard extends HTMLElement {
       const end = todayISO();
       this._range = { start: addDays(end, -29), end };
     }
+    // show_temperature is the "is this feature enabled at all" config
+    // switch; _showTemp is the in-card quick toggle on top of it, so it
+    // starts from the config default but then persists the user's choice
+    // across re-renders, same as _mode/_period above.
+    this._showTemp = this._showTemp ?? this._config.show_temperature;
   }
 
   set hass(hass) {
@@ -291,7 +308,7 @@ class MetroenergiesCard extends HTMLElement {
           .me-card-title { font-size:1.1em; font-weight:500; color: var(--primary-text-color); margin-bottom: 8px; }
           .me-header { display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px; gap: 8px; flex-wrap: wrap; }
           .me-subheader { display:flex; justify-content:flex-end; align-items:center; margin-bottom: 12px; gap: 8px; flex-wrap: wrap; }
-          .me-periods, .me-mode-group { display:flex; align-items:center; gap:4px; }
+          .me-periods, .me-mode-group, .me-header-right { display:flex; align-items:center; gap:4px; }
           .me-count-group, .me-range-group { display:flex; align-items:center; gap:6px; }
           .me-count-input, .me-range-input {
             padding: 3px 4px; border-radius: 6px;
@@ -330,9 +347,12 @@ class MetroenergiesCard extends HTMLElement {
           ${this._config.title ? `<div class="me-card-title">${this._config.title}</div>` : ""}
           <div class="me-header">
             <div class="me-periods"></div>
-            <div class="me-mode-group">
-              <button class="me-period-btn me-mode-btn" data-mode="rolling">Glissant</button>
-              <button class="me-period-btn me-mode-btn" data-mode="range">Plage</button>
+            <div class="me-header-right">
+              <div class="me-mode-group">
+                <button class="me-period-btn me-mode-btn" data-mode="rolling">Glissant</button>
+                <button class="me-period-btn me-mode-btn" data-mode="range">Plage</button>
+              </div>
+              <button class="me-period-btn me-temp-toggle" title="Afficher/masquer la température">🌡</button>
             </div>
           </div>
           <div class="me-subheader">
@@ -357,6 +377,7 @@ class MetroenergiesCard extends HTMLElement {
     this._els = {
       periods: this.querySelector(".me-periods"),
       modeGroup: this.querySelector(".me-mode-group"),
+      tempToggle: this.querySelector(".me-temp-toggle"),
       subheader: this.querySelector(".me-subheader"),
       countGroup: this.querySelector(".me-count-group"),
       countLabel: this.querySelector(".me-count-label"),
@@ -396,6 +417,15 @@ class MetroenergiesCard extends HTMLElement {
       this._els.subheader.remove();
     }
 
+    if (this._config.show_temperature) {
+      this._els.tempToggle.addEventListener("click", () => {
+        this._showTemp = !this._showTemp;
+        this._render();
+      });
+    } else {
+      this._els.tempToggle.remove();
+    }
+
     this._els.countInput.addEventListener("change", () => {
       const value = Math.max(1, Math.min(3650, Math.round(Number(this._els.countInput.value) || 1)));
       this._counts[this._period] = value;
@@ -430,6 +460,10 @@ class MetroenergiesCard extends HTMLElement {
 
     for (const btn of periods.querySelectorAll(".me-period-btn")) {
       btn.classList.toggle("active", btn.dataset.period === this._period);
+    }
+
+    if (this._config.show_temperature) {
+      this._els.tempToggle.classList.toggle("active", this._showTemp);
     }
 
     const rangeMode = this._mode === "range";
@@ -477,7 +511,7 @@ class MetroenergiesCard extends HTMLElement {
     const height = 230;
     const padLeft = 52;
     const temps = data.map((d) => d.temp).filter((t) => t !== null && t !== undefined);
-    const hasTemp = this._config.show_temperature && temps.length > 0;
+    const hasTemp = this._showTemp && temps.length > 0;
     // Wider right margin only when needed, to fit the °C axis labels.
     const padRight = hasTemp ? 38 : 8;
     const padTop = 14;
@@ -584,8 +618,11 @@ class MetroenergiesCard extends HTMLElement {
         const index = Number(event.target.dataset.index);
         const entry = data[index];
         const tempPart =
-          entry.temp !== null && entry.temp !== undefined ? ` (${formatNumber(entry.temp)}°C)` : "";
-        tooltip.textContent = `${entry.label} : ${formatNumber(entry.value)} ${this._config.unit}${tempPart}`;
+          this._showTemp && entry.temp !== null && entry.temp !== undefined
+            ? ` (${formatNumber(entry.temp)}°C)`
+            : "";
+        const label = entry.weekday ? `${capitalize(entry.weekday)} ${entry.label}` : entry.label;
+        tooltip.textContent = `${label} : ${formatNumber(entry.value)} ${this._config.unit}${tempPart}`;
         tooltip.style.display = "block";
       });
       bar.addEventListener("mousemove", (event) => {
