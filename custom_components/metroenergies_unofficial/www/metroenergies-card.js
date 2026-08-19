@@ -102,6 +102,8 @@ class MetroenergiesCard extends HTMLElement {
       months: PERIODS.month.defaultCount,
       years: PERIODS.year.defaultCount,
       show_period_selector: true,
+      default_mode: "rolling",
+      show_mode_selector: true,
       ...config,
     };
     this._period = this._config.default_period in PERIODS ? this._config.default_period : "day";
@@ -110,7 +112,7 @@ class MetroenergiesCard extends HTMLElement {
       month: this._config.months,
       year: this._config.years,
     };
-    this._mode = this._mode || "rolling";
+    this._mode = this._mode || (["rolling", "range"].includes(this._config.default_mode) ? this._config.default_mode : "rolling");
     if (!this._range) {
       const end = todayISO();
       this._range = { start: addDays(end, -29), end };
@@ -141,6 +143,8 @@ class MetroenergiesCard extends HTMLElement {
       days: "Jours affichés par défaut",
       months: "Mois affichés par défaut",
       years: "Années affichées par défaut",
+      default_mode: "Mode par défaut",
+      show_mode_selector: "Afficher le sélecteur Glissant/Plage",
     };
     const HELPERS = {
       entity: "Entité exposant l'attribut history (ex. sensor.metroenergies_unofficial_consommation).",
@@ -150,6 +154,7 @@ class MetroenergiesCard extends HTMLElement {
       days: "Valeur de départ, modifiable ensuite directement dans la carte.",
       months: "Valeur de départ, modifiable ensuite directement dans la carte.",
       years: "Valeur de départ, modifiable ensuite directement dans la carte.",
+      show_mode_selector: "Si désactivé, masque aussi les champs nombre de jours / plage de dates : la carte reste figée sur le mode et les valeurs par défaut.",
     };
 
     return {
@@ -191,6 +196,25 @@ class MetroenergiesCard extends HTMLElement {
             { name: "days", selector: { number: { min: 1, max: 3650, mode: "box" } } },
             { name: "months", selector: { number: { min: 1, max: 600, mode: "box" } } },
             { name: "years", selector: { number: { min: 1, max: 100, mode: "box" } } },
+          ],
+        },
+        {
+          type: "grid",
+          name: "",
+          schema: [
+            {
+              name: "default_mode",
+              selector: {
+                select: {
+                  mode: "dropdown",
+                  options: [
+                    { value: "rolling", label: "Glissant" },
+                    { value: "range", label: "Plage" },
+                  ],
+                },
+              },
+            },
+            { name: "show_mode_selector", selector: { boolean: {} } },
           ],
         },
       ],
@@ -274,6 +298,7 @@ class MetroenergiesCard extends HTMLElement {
     this._els = {
       periods: this.querySelector(".me-periods"),
       modeGroup: this.querySelector(".me-mode-group"),
+      subheader: this.querySelector(".me-subheader"),
       countGroup: this.querySelector(".me-count-group"),
       countLabel: this.querySelector(".me-count-label"),
       countInput: this.querySelector(".me-count-input"),
@@ -298,6 +323,9 @@ class MetroenergiesCard extends HTMLElement {
         });
         this._els.periods.appendChild(btn);
       }
+    }
+
+    if (this._config.show_mode_selector) {
       for (const btn of this._els.modeGroup.querySelectorAll(".me-mode-btn")) {
         btn.addEventListener("click", () => {
           this._mode = btn.dataset.mode;
@@ -306,6 +334,7 @@ class MetroenergiesCard extends HTMLElement {
       }
     } else {
       this._els.modeGroup.remove();
+      this._els.subheader.remove();
     }
 
     this._els.countInput.addEventListener("change", () => {
@@ -343,25 +372,26 @@ class MetroenergiesCard extends HTMLElement {
     for (const btn of periods.querySelectorAll(".me-period-btn")) {
       btn.classList.toggle("active", btn.dataset.period === this._period);
     }
-    if (this._config.show_period_selector) {
+
+    const rangeMode = this._mode === "range";
+    if (this._config.show_mode_selector) {
       for (const btn of this._els.modeGroup.querySelectorAll(".me-mode-btn")) {
         btn.classList.toggle("active", btn.dataset.mode === this._mode);
       }
-    }
 
-    const rangeMode = this._mode === "range";
-    this._els.countGroup.style.display = rangeMode ? "none" : "flex";
-    this._els.rangeGroup.style.display = rangeMode ? "flex" : "none";
+      this._els.countGroup.style.display = rangeMode ? "none" : "flex";
+      this._els.rangeGroup.style.display = rangeMode ? "flex" : "none";
 
-    this._els.countLabel.textContent = PERIODS[this._period].unitLabel;
-    if (document.activeElement !== this._els.countInput) {
-      this._els.countInput.value = this._counts[this._period];
-    }
-    if (document.activeElement !== this._els.rangeStart) {
-      this._els.rangeStart.value = this._range.start;
-    }
-    if (document.activeElement !== this._els.rangeEnd) {
-      this._els.rangeEnd.value = this._range.end;
+      this._els.countLabel.textContent = PERIODS[this._period].unitLabel;
+      if (document.activeElement !== this._els.countInput) {
+        this._els.countInput.value = this._counts[this._period];
+      }
+      if (document.activeElement !== this._els.rangeStart) {
+        this._els.rangeStart.value = this._range.start;
+      }
+      if (document.activeElement !== this._els.rangeEnd) {
+        this._els.rangeEnd.value = this._range.end;
+      }
     }
 
     const history = stateObj.attributes.history || [];

@@ -82,6 +82,8 @@ Options disponibles :
 | `months` | `12` | Valeur de départ du nombre de mois en vue "mois". |
 | `years` | `5` | Valeur de départ du nombre d'années en vue "année". |
 | `show_period_selector` | `true` | Affiche les boutons Jour/Mois/Année. |
+| `default_mode` | `rolling` | Mode initial : `rolling` (glissant) ou `range` (plage de dates). |
+| `show_mode_selector` | `true` | Affiche les boutons Glissant/Plage et les champs associés (nombre de jours/mois/années, ou dates de début/fin). Si `false`, la carte reste figée sur `default_mode` et les valeurs par défaut (`days`/`months`/`years`), sans aucun contrôle affiché. |
 
 L'axe Y n'est pas configurable : son maximum est toujours recalculé
 automatiquement (+15% au-dessus du maximum affiché) plutôt que fixé, pour
